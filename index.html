@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>命运三贤</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root { --gold:#c9a84c; --gold-light:#e8cc7a; --parchment:#f5ead8; --deep:#0d0905; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--deep); font-family:'Noto Serif SC',serif; min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%,rgba(212,180,131,.6) 0%,transparent 100%),
+      radial-gradient(1px 1px at 55% 10%,rgba(212,180,131,.4) 0%,transparent 100%),
+      radial-gradient(1.5px 1.5px at 80% 60%,rgba(212,180,131,.5) 0%,transparent 100%),
+      radial-gradient(1px 1px at 10% 80%,rgba(212,180,131,.3) 0%,transparent 100%),
+      radial-gradient(2px 2px at 75% 40%,rgba(212,180,131,.6) 0%,transparent 100%);
+  }
+  .container { position:relative; z-index:1; max-width:980px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* Toast */
+  .toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(16px); background:rgba(18,12,4,.97); border:1px solid rgba(201,168,76,.45); color:var(--gold-light); font-size:.8rem; padding:10px 24px; border-radius:3px; letter-spacing:.08em; opacity:0; transition:opacity .3s,transform .3s; z-index:999; pointer-events:none; white-space:nowrap; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* Header — compact top bar */
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(201,168,76,.15); animation:fadeDown .6s ease; }
+  .title-zh { font-size:1.1rem; font-weight:700; color:var(--gold); letter-spacing:.25em; text-shadow:0 0 16px rgba(201,168,76,.35); white-space:nowrap; }
+  .title-divider { display:none; }
+  .subtitle { font-family:'IM Fell English',serif; font-style:italic; color:rgba(212,180,131,.5); font-size:.72rem; letter-spacing:.1em; }
+
+  /* Nav */
+  .top-nav { display:flex; gap:6px; }
+  .nav-btn { font-family:'Noto Serif SC',serif; font-size:.75rem; padding:6px 14px; background:transparent; border:1px solid rgba(201,168,76,.3); color:rgba(212,180,131,.65); border-radius:2px; cursor:pointer; letter-spacing:.08em; transition:all .2s; }
+  .nav-btn.active,.nav-btn:hover { background:rgba(201,168,76,.18); border-color:rgba(201,168,76,.6); color:var(--gold-light); }
+
+  /* Expert cards */
+  .experts-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:28px; }
+  @media(max-width:700px){ .experts-row{grid-template-columns:1fr;} }
+  .expert-card { background:linear-gradient(160deg,rgba(30,20,10,.95),rgba(15,10,5,.98)); border:1px solid rgba(201,168,76,.25); border-radius:4px; padding:22px 16px; cursor:pointer; transition:all .35s; position:relative; overflow:hidden; animation:fadeUp .8s ease both; }
+  .expert-card:nth-child(1){animation-delay:.2s}.expert-card:nth-child(2){animation-delay:.4s}.expert-card:nth-child(3){animation-delay:.6s}
+  .expert-card::before { content:''; position:absolute; inset:0; opacity:0; transition:opacity .35s; }
+  .expert-card.east::before  { background:radial-gradient(ellipse at top,rgba(139,26,26,.15),transparent 70%); }
+  .expert-card.west::before  { background:radial-gradient(ellipse at top,rgba(26,37,64,.3),transparent 70%); }
+  .expert-card.synth::before { background:radial-gradient(ellipse at top,rgba(201,168,76,.1),transparent 70%); }
+  .expert-card:hover { border-color:rgba(201,168,76,.6); transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,.5); }
+  .expert-card:hover::before { opacity:1; }
+  .expert-card.active { border-color:var(--gold); box-shadow:0 0 20px rgba(201,168,76,.2); }
+  .expert-symbol { font-size:2.6rem; text-align:center; margin-bottom:10px; filter:drop-shadow(0 0 8px currentColor); }
+  .east  .expert-symbol { color:#e05050; }
+  .west  .expert-symbol { color:#7090e8; }
+  .synth .expert-symbol { color:#d4b86a; }
+  .expert-name-zh { font-size:1.1rem; font-weight:700; color:var(--gold-light); text-align:center; letter-spacing:.15em; margin-bottom:4px; }
+  .expert-name-en { font-family:'IM Fell English',serif; font-style:italic; font-size:.72rem; color:rgba(212,180,131,.75); text-align:center; margin-bottom:12px; }
+  .expert-tags { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; }
+  .tag { font-size:.65rem; padding:3px 8px; border-radius:2px; color:#ddc98a; font-weight:500; }
+  .east .tag  { background:rgba(180,40,40,.25); border:1px solid rgba(200,70,70,.5); }
+  .west .tag  { background:rgba(40,60,120,.45); border:1px solid rgba(100,140,220,.45); }
+  .synth .tag { background:rgba(180,148,60,.15); border:1px solid rgba(201,168,76,.4); }
+
+  /* Consult input */
+  .input-section { background:rgba(15,10,5,.9); border:1px solid rgba(201,168,76,.2); border-radius:4px; padding:22px; margin-bottom:24px; animation:fadeUp 1s ease .8s both; }
+  .input-label { font-size:.78rem; color:rgba(212,180,131,.7); letter-spacing:.15em; margin-bottom:10px; }
+  .mode-selector,.qtype-selector { display:flex; gap:0; margin-bottom:12px; border:1px solid rgba(201,168,76,.3); border-radius:3px; overflow:hidden; width:fit-content; }
+  .mode-btn,.qtype-btn { font-family:'Noto Serif SC',serif; font-size:.76rem; padding:6px 16px; background:transparent; border:none; border-right:1px solid rgba(201,168,76,.3); color:rgba(212,180,131,.6); cursor:pointer; letter-spacing:.08em; transition:all .2s; }
+  .mode-btn:last-child,.qtype-btn:last-child { border-right:none; }
+  .mode-btn.active,.qtype-btn.active,.mode-btn:hover,.qtype-btn:hover { background:rgba(201,168,76,.2); color:var(--gold-light); }
+  .qtype-desc { font-size:.7rem; color:rgba(212,180,131,.5); margin-bottom:12px; }
+  .ask-row { display:flex; gap:12px; align-items:flex-end; }
+  textarea { flex:1; background:rgba(255,255,255,.04); border:1px solid rgba(201,168,76,.2); border-radius:3px; color:var(--parchment); font-family:'Noto Serif SC',serif; font-size:.88rem; padding:11px 13px; resize:none; height:78px; line-height:1.6; transition:border-color .3s; }
+  textarea:focus { outline:none; border-color:rgba(201,168,76,.5); }
+  textarea::placeholder { color:rgba(212,180,131,.25); }
+  .consult-options { display:flex; flex-direction:column; gap:8px; }
+
+  /* Buttons */
+  .btn { background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.08)); border:1px solid rgba(201,168,76,.35); color:var(--gold-light); font-family:'Noto Serif SC',serif; font-size:.78rem; padding:9px 15px; border-radius:3px; cursor:pointer; letter-spacing:.1em; white-space:nowrap; transition:all .25s; }
+  .btn:hover { background:linear-gradient(135deg,rgba(201,168,76,.3),rgba(201,168,76,.15)); border-color:var(--gold); }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .btn-primary { background:linear-gradient(135deg,rgba(201,168,76,.25),rgba(201,168,76,.1)); }
+  .btn-sm { font-size:.7rem; padding:5px 10px; }
+
+  /* ── Profile Tab ── */
+  .profile-tab-layout { display:grid; grid-template-columns:190px 1fr; gap:16px; }
+  @media(max-width:640px){ .profile-tab-layout{grid-template-columns:1fr;} }
+  .profile-tab-layout > * { animation:none; }
+  .profile-tab-layout > *.anim-in { animation:fadeUp .45s ease both; }
+  .profile-tab-layout > *:nth-child(2).anim-in { animation-delay:.1s; }
+
+  /* user list sidebar */
+  .user-list-panel { background:rgba(10,7,3,.95); border:1px solid rgba(201,168,76,.2); border-radius:4px; padding:14px; }
+  .panel-title { font-size:.7rem; color:rgba(212,180,131,.6); letter-spacing:.15em; margin-bottom:10px; }
+  .user-list { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; min-height:30px; }
+  .user-item { display:flex; align-items:center; gap:6px; padding:7px 9px; border-radius:3px; border:1px solid transparent; cursor:pointer; transition:all .2s; }
+  .user-item:hover { background:rgba(201,168,76,.09); border-color:rgba(201,168,76,.25); }
+  .user-item.active { background:rgba(201,168,76,.16); border-color:rgba(201,168,76,.5); }
+  .user-item-avatar { width:22px; height:22px; border-radius:50%; background:rgba(201,168,76,.2); border:1px solid rgba(201,168,76,.35); display:flex; align-items:center; justify-content:center; font-size:.7rem; color:var(--gold-light); flex-shrink:0; }
+  .user-item-name { font-size:.8rem; color:rgba(212,180,131,.9); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .user-item-del { font-size:.58rem; color:rgba(212,180,131,.45); padding:1px 5px; background:transparent; border:1px solid rgba(212,180,131,.2); border-radius:2px; cursor:pointer; flex-shrink:0; transition:all .2s; font-family:'Noto Serif SC',serif; line-height:1.6; }
+  .user-item-del:hover { color:rgba(212,180,131,.8); border-color:rgba(212,180,131,.5); }
+  .user-list-empty { font-size:.72rem; color:rgba(212,180,131,.38); text-align:center; padding:8px 0; }
+
+  /* profile form */
+  .profile-panel { background:rgba(10,7,3,.95); border:1px solid rgba(201,168,76,.2); border-radius:4px; padding:22px; }
+  .profile-panel-header { display:flex; align-items:baseline; gap:10px; margin-bottom:16px; }
+  .profile-panel-title { font-size:.82rem; color:var(--gold-light); letter-spacing:.15em; }
+  .profile-editing-label { font-size:.7rem; color:rgba(212,180,131,.58); }
+  .profile-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  @media(max-width:500px){ .profile-fields{grid-template-columns:1fr;} }
+  .field-group label { display:block; font-size:.7rem; color:rgba(212,180,131,.65); letter-spacing:.1em; margin-bottom:4px; }
+  .field-group input,.field-group select { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(201,168,76,.2); border-radius:3px; color:var(--parchment); font-family:'Noto Serif SC',serif; font-size:.85rem; padding:8px 10px; transition:border-color .3s; }
+  .field-group input:focus,.field-group select:focus { outline:none; border-color:rgba(201,168,76,.5); }
+  .field-group select option { background:#1a1000; }
+  .profile-bazi { padding:11px 14px; background:rgba(139,26,26,.07); border:1px solid rgba(139,26,26,.18); border-radius:3px; margin-bottom:14px; }
+  .profile-bazi-title { font-size:.68rem; color:rgba(212,180,131,.58); letter-spacing:.1em; margin-bottom:7px; }
+  .bazi-pillars { display:flex; gap:20px; flex-wrap:wrap; }
+  .bazi-pillar { text-align:center; }
+  .bazi-pillar-label { font-size:.6rem; color:rgba(212,180,131,.52); display:block; margin-bottom:2px; }
+  .bazi-pillar-val { font-size:.92rem; color:var(--gold-light); font-weight:600; letter-spacing:.05em; }
+  .bazi-note { font-size:.66rem; color:rgba(212,180,131,.5); margin-top:7px; }
+  .profile-actions { display:flex; gap:8px; }
+  /* split date/time inputs */
+  .split-input-row { display:flex; align-items:center; gap:6px; }
+  .split-input-row input[type=number] { flex:1; min-width:0; -moz-appearance:textfield; }
+  .split-input-row input[type=number]::-webkit-inner-spin-button,
+  .split-input-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  .time-sep { color:rgba(212,180,131,.5); font-size:.9rem; flex-shrink:0; }
+  /* western astrology display — mirrors bazi style */
+  .profile-astro { padding:11px 14px; background:rgba(26,37,64,.12); border:1px solid rgba(100,120,200,.2); border-radius:3px; margin-bottom:14px; }
+  .profile-astro-title { font-size:.68rem; color:rgba(180,200,240,.6); letter-spacing:.1em; margin-bottom:7px; }
+  .astro-items { display:flex; gap:20px; flex-wrap:wrap; }
+  .astro-item { text-align:center; min-width:52px; }
+  .astro-item-label { font-size:.6rem; color:rgba(180,200,240,.5); display:block; margin-bottom:2px; }
+  .astro-item-val { font-size:.88rem; color:#a8c0f0; font-weight:600; letter-spacing:.03em; }
+  .astro-note { font-size:.64rem; color:rgba(180,200,240,.45); margin-top:7px; }
+
+  /* ── Identity selector in consult tab ── */
+  .identity-bar { display:flex; align-items:center; gap:10px; padding:10px 16px; background:rgba(10,7,3,.9); border:1px solid rgba(201,168,76,.18); border-radius:4px; margin-bottom:14px; flex-wrap:wrap; }
+  .identity-label { font-size:.72rem; color:rgba(212,180,131,.6); letter-spacing:.12em; white-space:nowrap; }
+  .identity-chips { display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+  .identity-chip { font-family:'Noto Serif SC',serif; font-size:.74rem; padding:4px 12px; background:transparent; border:1px solid rgba(201,168,76,.3); border-radius:20px; color:rgba(212,180,131,.7); cursor:pointer; transition:all .2s; white-space:nowrap; }
+  .identity-chip:hover { border-color:rgba(201,168,76,.6); color:var(--gold-light); }
+  .identity-chip.active { background:rgba(201,168,76,.2); border-color:var(--gold); color:var(--gold-light); }
+  .identity-chip.none { font-style:italic; color:rgba(212,180,131,.45); }
+  .identity-go-profile { font-size:.68rem; color:rgba(212,180,131,.45); text-decoration:underline; cursor:pointer; white-space:nowrap; transition:color .2s; }
+  .identity-go-profile:hover { color:rgba(212,180,131,.75); }
+
+  /* ── Info gather ── */
+  .info-gather-section { margin-top:24px; animation:fadeUp .5s ease; }
+  .gather-title { text-align:center; font-size:.76rem; color:rgba(212,180,131,.6); letter-spacing:.2em; margin-bottom:16px; }
+  .gather-title span { border-bottom:1px solid rgba(201,168,76,.25); padding-bottom:4px; }
+
+  /* info gather header badges */
+  .expert-badges { display:flex; gap:5px; margin-left:auto; }
+  .expert-badge { font-size:.62rem; padding:2px 7px; border-radius:2px; color:rgba(212,180,131,.6); }
+  .expert-badge.east  { background:rgba(139,26,26,.2);  border:1px solid rgba(139,26,26,.28); }
+  .expert-badge.west  { background:rgba(26,37,64,.3);   border:1px solid rgba(100,120,200,.22); }
+  .expert-badge.synth { background:rgba(201,168,76,.08); border:1px solid rgba(201,168,76,.18); }
+  /* full-width field in profile grid */
+  .field-group.span2 { grid-column: 1 / -1; }
+  .field-group.span2 textarea { width:100%; height:80px; resize:vertical; font-size:.85rem; }
+
+  /* unified checklist (merged questions + status in one list) */
+  .req-list-box { background:rgba(12,8,4,.95); border:1px solid rgba(201,168,76,.15); border-radius:4px; overflow:hidden; margin-bottom:12px; }
+  .req-list-header { padding:9px 16px; background:rgba(201,168,76,.06); border-bottom:1px solid rgba(201,168,76,.1); font-size:.72rem; color:rgba(212,180,131,.65); letter-spacing:.12em; display:flex; align-items:center; gap:6px; }
+  .req-list-loading { padding:16px 18px; }
+  .req-list-body { padding:12px 16px 14px; display:flex; flex-direction:column; gap:6px; }
+  /* each requirement row */
+  .req-item { display:flex; align-items:baseline; gap:8px; font-size:.84rem; line-height:1.7; }
+  .req-item-icon { flex-shrink:0; width:16px; text-align:center; font-size:.72rem; }
+  .req-item-text { flex:1; }
+  .req-item.have .req-item-icon { color:rgba(100,185,100,.8); }
+  .req-item.have .req-item-text { color:rgba(140,210,140,.75); text-decoration:line-through; text-decoration-color:rgba(100,185,100,.35); }
+  .req-item.have .req-item-value { font-size:.75rem; color:rgba(120,190,120,.55); margin-left:4px; font-style:italic; }
+  .req-item.need .req-item-icon { color:rgba(201,168,76,.55); }
+  .req-item.need .req-item-text { color:rgba(212,180,131,.8); }
+  /* supplement input */
+  .supplement-wrap { padding:0 16px 16px; }
+  .supplement-label { font-size:.7rem; color:rgba(212,180,131,.62); letter-spacing:.1em; margin-bottom:7px; }
+  .supplement-wrap textarea { width:100%; height:130px; font-size:.88rem; resize:vertical; }
+  .gather-btn-row { display:flex; justify-content:center; gap:10px; margin-top:4px; }
+
+  /* Response cards */
+  .response-card { background:rgba(12,8,4,.95); border-radius:4px; overflow:hidden; border:1px solid rgba(201,168,76,.15); margin-bottom:14px; }
+  .response-header { display:flex; align-items:center; gap:10px; padding:11px 17px; border-bottom:1px solid rgba(201,168,76,.1); }
+  .east  .response-header { background:rgba(139,26,26,.15); }
+  .west  .response-header { background:rgba(26,37,64,.25); }
+  .synth .response-header { background:rgba(201,168,76,.08); }
+  .response-symbol { font-size:1.2rem; }
+  .east  .response-symbol { color:#e05050; }
+  .west  .response-symbol { color:#7090e8; }
+  .synth .response-symbol { color:#d4b86a; }
+  .response-name { font-size:.83rem; font-weight:700; color:var(--gold-light); letter-spacing:.1em; }
+  .response-body { padding:17px 19px; color:rgba(245,234,216,.88); font-size:.9rem; line-height:1.95; }
+  .response-body p { margin-bottom:.75em; }
+  .response-body p:last-child { margin-bottom:0; }
+  .response-body strong { color:var(--gold-light); font-weight:600; }
+  .response-body em { font-style:italic; color:rgba(245,234,216,.75); }
+  .response-body h3 { font-size:.88rem; font-weight:700; color:var(--gold-light); letter-spacing:.1em; margin:1em 0 .4em; border-bottom:1px solid rgba(201,168,76,.15); padding-bottom:.25em; }
+  .response-body h4 { font-size:.86rem; font-weight:600; color:rgba(212,180,131,.9); margin:.8em 0 .3em; }
+  .followup-turn-a { font-size:.88rem; color:rgba(245,234,216,.82); line-height:1.85; }
+  .followup-turn-a p { margin-bottom:.6em; }
+  .followup-turn-a p:last-child { margin-bottom:0; }
+  .followup-turn-a strong { color:var(--gold-light); font-weight:600; }
+  .followup-turn-a em { font-style:italic; }
+  /* follow-up conversation within each expert card */
+  .followup-history { border-top:1px solid rgba(201,168,76,.08); }
+  .followup-turn { padding:12px 19px; border-bottom:1px solid rgba(201,168,76,.05); }
+  .followup-turn-q { font-size:.78rem; color:rgba(212,180,131,.6); margin-bottom:6px; font-style:italic; }
+  .followup-turn-q::before { content:'追问：'; color:rgba(201,168,76,.7); }
+  .followup-input-row { display:flex; gap:8px; padding:10px 14px; border-top:1px solid rgba(201,168,76,.1); background:rgba(255,255,255,.015); align-items:flex-end; }
+  .followup-input-row textarea { flex:1; height:54px; font-size:.82rem; resize:none; background:rgba(255,255,255,.03); border:1px solid rgba(201,168,76,.18); border-radius:3px; color:var(--parchment); font-family:'Noto Serif SC',serif; padding:8px 10px; line-height:1.5; transition:border-color .2s; }
+  .followup-input-row textarea:focus { outline:none; border-color:rgba(201,168,76,.45); }
+  .followup-input-row textarea::placeholder { color:rgba(212,180,131,.2); }
+  .followup-send-btn { font-size:.72rem; padding:7px 12px; flex-shrink:0; }
+  /* unified followup bar below all expert cards */
+  .unified-followup-bar { margin-top:6px; background:rgba(12,8,4,.95); border:1px solid rgba(201,168,76,.2); border-radius:4px; overflow:hidden; }
+  .unified-followup-label { font-size:.7rem; color:rgba(212,180,131,.55); letter-spacing:.14em; padding:9px 16px 0; }
+  .unified-followup-row { display:flex; gap:8px; padding:10px 14px 12px; align-items:flex-end; }
+  .unified-followup-row textarea { flex:1; height:60px; font-size:.85rem; resize:none; background:rgba(255,255,255,.04); border:1px solid rgba(201,168,76,.22); border-radius:3px; color:var(--parchment); font-family:'Noto Serif SC',serif; padding:9px 11px; line-height:1.55; transition:border-color .2s; }
+  .unified-followup-row textarea:focus { outline:none; border-color:rgba(201,168,76,.5); }
+  .unified-followup-row textarea::placeholder { color:rgba(212,180,131,.25); }
+  .typing-cursor::after { content:'▋'; animation:blink .8s step-end infinite; color:var(--gold); font-size:.8em; }
+
+  /* History */
+  .history-panel { animation:fadeUp .5s ease; }
+  .history-empty { text-align:center; padding:40px; color:rgba(212,180,131,.3); font-size:.82rem; letter-spacing:.1em; }
+  .history-item { background:rgba(12,8,4,.9); border:1px solid rgba(201,168,76,.12); border-radius:4px; margin-bottom:12px; overflow:hidden; }
+  .history-header { display:flex; align-items:center; gap:10px; padding:11px 16px; cursor:pointer; transition:background .2s; }
+  .history-header:hover { background:rgba(201,168,76,.04); }
+  .history-q { font-size:.82rem; color:rgba(212,180,131,.85); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .history-meta { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .history-qtype { font-size:.63rem; padding:2px 6px; border-radius:2px; background:rgba(201,168,76,.14); border:1px solid rgba(201,168,76,.28); color:rgba(212,180,131,.75); }
+  .history-user-badge { font-size:.63rem; padding:2px 6px; border-radius:2px; background:rgba(26,37,64,.4); border:1px solid rgba(100,120,200,.3); color:rgba(180,200,240,.7); }
+  .history-time { font-size:.68rem; color:rgba(212,180,131,.45); }
+  .history-del { font-size:.63rem; padding:3px 8px; opacity:.6; }
+  .history-body { display:none; padding:12px 16px; border-top:1px solid rgba(201,168,76,.07); }
+  .history-body.open { display:block; }
+  .history-user-info { font-size:.77rem; color:rgba(212,180,131,.5); margin-bottom:12px; padding:8px 10px; background:rgba(255,255,255,.02); border-radius:2px; white-space:pre-wrap; line-height:1.8; }
+  .history-answers { display:flex; flex-direction:column; gap:8px; }
+  .history-answer { border-radius:3px; overflow:hidden; border:1px solid rgba(201,168,76,.1); }
+  .history-answer-header { display:flex; align-items:center; gap:8px; padding:7px 12px; font-size:.76rem; color:var(--gold-light); }
+  .history-answer-header.east  { background:rgba(139,26,26,.1); }
+  .history-answer-header.west  { background:rgba(26,37,64,.14); }
+  .history-answer-header.synth { background:rgba(201,168,76,.06); }
+  .history-answer-body { padding:11px 14px; color:rgba(245,234,216,.85); font-size:.84rem; line-height:1.85; }
+
+  /* Loading */
+  .loading-dots { display:inline-flex; gap:4px; padding:17px 19px; }
+  .loading-dots span { width:6px; height:6px; border-radius:50%; background:var(--gold); opacity:.3; animation:pulse 1.2s ease infinite; }
+  .loading-dots span:nth-child(2){animation-delay:.2s}.loading-dots span:nth-child(3){animation-delay:.4s}
+
+  /* ── Welcome / onboarding screen ── */
+  .welcome-overlay { position:fixed; inset:0; z-index:100; background:var(--deep); display:flex; align-items:center; justify-content:center; padding:24px; animation:fadeDown .5s ease; }
+  .welcome-overlay.hidden { animation:fadeUp .4s ease forwards; pointer-events:none; }
+  @keyframes fadeOut { to { opacity:0; transform:translateY(-12px); } }
+  .welcome-overlay.hidden { animation:fadeOut .35s ease forwards; }
+  .welcome-box { max-width:480px; width:100%; text-align:center; }
+  .welcome-title { font-size:clamp(2.2rem,8vw,3.8rem); font-weight:700; color:var(--gold); letter-spacing:.3em; text-shadow:0 0 40px rgba(201,168,76,.5); margin-bottom:8px; }
+  .welcome-divider { width:160px; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); margin:0 auto 12px; }
+  .welcome-sub { font-family:'IM Fell English',serif; font-style:italic; color:rgba(212,180,131,.65); font-size:.95rem; letter-spacing:.15em; margin-bottom:40px; }
+  .welcome-prompt { font-size:.78rem; color:rgba(212,180,131,.55); letter-spacing:.18em; margin-bottom:18px; }
+  .welcome-users { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+  .welcome-user-btn { display:flex; align-items:center; gap:12px; padding:12px 18px; background:rgba(20,13,5,.9); border:1px solid rgba(201,168,76,.25); border-radius:4px; cursor:pointer; transition:all .25s; text-align:left; width:100%; }
+  .welcome-user-btn:hover { border-color:rgba(201,168,76,.6); background:rgba(201,168,76,.08); transform:translateX(3px); }
+  .welcome-user-avatar { width:32px; height:32px; border-radius:50%; background:rgba(201,168,76,.15); border:1px solid rgba(201,168,76,.3); display:flex; align-items:center; justify-content:center; font-size:.88rem; color:var(--gold-light); flex-shrink:0; }
+  .welcome-user-info { flex:1; }
+  .welcome-user-name { font-size:.88rem; color:rgba(212,180,131,.9); font-weight:600; letter-spacing:.05em; }
+  .welcome-user-meta { font-size:.68rem; color:rgba(212,180,131,.4); margin-top:2px; }
+  .welcome-new-btn { display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px; background:transparent; border:1px dashed rgba(201,168,76,.3); border-radius:4px; cursor:pointer; transition:all .25s; width:100%; color:rgba(212,180,131,.55); font-family:'Noto Serif SC',serif; font-size:.82rem; letter-spacing:.1em; }
+  .welcome-new-btn:hover { border-color:rgba(201,168,76,.6); color:var(--gold-light); background:rgba(201,168,76,.06); }
+  .welcome-anon-btn { margin-top:10px; display:block; font-size:.68rem; color:rgba(212,180,131,.3); cursor:pointer; letter-spacing:.1em; transition:color .2s; background:none; border:none; font-family:'Noto Serif SC',serif; width:100%; }
+  .welcome-anon-btn:hover { color:rgba(212,180,131,.6); }
+
+  .footer-note { text-align:center; margin-top:40px; color:rgba(212,180,131,.2); font-size:.68rem; letter-spacing:.1em; font-family:'IM Fell English',serif; font-style:italic; }
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--deep)}::-webkit-scrollbar-thumb{background:rgba(201,168,76,.28);border-radius:2px}
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:none}}
+  @keyframes fadeUp  {from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none}}
+  @keyframes blink   {50%{opacity:0}}
+  @keyframes pulse   {0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+
+  /* ── Mobile ── */
+  @media(max-width:600px){
+    .container { padding:16px 14px 60px; }
+
+    /* header: stack title above nav */
+    header { flex-direction:column; align-items:flex-start; gap:10px; }
+    .subtitle { display:none; }
+    .top-nav { width:100%; justify-content:space-between; }
+    .nav-btn { flex:1; text-align:center; padding:7px 4px; font-size:.7rem; }
+
+    /* expert cards already 1-col at 700px, just tighten padding */
+    .expert-card { padding:16px 12px; }
+
+    /* consult input */
+    .input-section { padding:16px 14px; }
+    .mode-selector,.qtype-selector { width:100%; }
+    .mode-btn,.qtype-btn { flex:1; text-align:center; }
+    .ask-row { flex-direction:column; align-items:stretch; }
+    .ask-row textarea { height:90px; }
+    .consult-options { flex-direction:row; justify-content:flex-end; }
+
+    /* identity bar: wrap */
+    .identity-bar { flex-wrap:wrap; gap:6px; }
+    .identity-go-profile { width:100%; text-align:right; }
+
+    /* profile split inputs: give more room */
+    .split-input-row { gap:4px; }
+
+    /* unified followup */
+    .unified-followup-row { flex-direction:column; }
+    .unified-followup-row textarea { height:70px; }
+    .unified-followup-row .followup-send-btn { width:100%; }
+
+    /* welcome screen */
+    .welcome-box { padding:0 4px; }
+    .welcome-title { font-size:2.4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- ══ WELCOME OVERLAY ══ -->
+<div class="welcome-overlay" id="welcome-overlay">
+  <div class="welcome-box">
+    <div class="welcome-title">命运三贤</div>
+    <div class="welcome-divider"></div>
+    <div class="welcome-sub">Three Sages of Fate · East · West · Synthesis</div>
+    <div class="welcome-prompt">请选择问卦人</div>
+    <div class="welcome-users" id="welcome-users"></div>
+    <button class="welcome-new-btn" onclick="welcomeNewUser()">＋ 新建用户档案</button>
+    <button class="welcome-anon-btn" onclick="welcomeSelect(null)">匿名问卦，不建立档案</button>
+  </div>
+</div>
+
+<div class="container">
+
+<header>
+  <div>
+    <div class="title-zh">命运三贤</div>
+    <div class="subtitle">Three Sages of Fate</div>
+  </div>
+  <nav class="top-nav">
+    <button class="nav-btn active" id="nav-consult" onclick="showTab('consult')">问卦</button>
+    <button class="nav-btn" id="nav-profile" onclick="showTab('profile')">身份档案</button>
+    <button class="nav-btn" id="nav-history" onclick="showTab('history')">历史记录</button>
+  </nav>
+</header>
+
+<!-- ══ TAB: CONSULT ══ -->
+<div id="tab-consult">
+  <!-- identity selector -->
+  <div class="identity-bar" id="identity-bar">
+    <span class="identity-label">〔 当前问卦人 〕</span>
+    <div class="identity-chips" id="identity-chips">
+      <span class="identity-chip none active" onclick="selectIdentity(null)">匿名</span>
+    </div>
+    <span class="identity-go-profile" onclick="showTab('profile')">管理身份档案 →</span>
+  </div>
+
+  <div class="experts-row">
+    <div class="expert-card east" id="card-east" onclick="toggleExpert('east')">
+      <div class="expert-symbol">☯</div>
+      <div class="expert-name-zh">命理先生</div>
+      <div class="expert-name-en">Master of Chinese Metaphysics</div>
+      <div class="expert-tags">
+        <span class="tag">八字</span><span class="tag">五行</span>
+        <span class="tag">紫微斗数</span><span class="tag">六爻</span><span class="tag">风水</span>
+      </div>
+    </div>
+    <div class="expert-card west" id="card-west" onclick="toggleExpert('west')">
+      <div class="expert-symbol">✦</div>
+      <div class="expert-name-zh">星象大师</div>
+      <div class="expert-name-en">Master of Western Astrology</div>
+      <div class="expert-tags">
+        <span class="tag">星盘</span><span class="tag">上升星座</span>
+        <span class="tag">行星</span><span class="tag">宫位</span><span class="tag">相位</span>
+      </div>
+    </div>
+    <div class="expert-card synth" id="card-synth" onclick="toggleExpert('synth')">
+      <div class="expert-symbol">⚖</div>
+      <div class="expert-name-zh">融合智者</div>
+      <div class="expert-name-en">Synthesis · Science · Logic</div>
+      <div class="expert-tags">
+        <span class="tag">跨文化比较</span><span class="tag">心理学</span>
+        <span class="tag">逻辑分析</span><span class="tag">批判性思维</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-section">
+    <div class="input-label">〔 咨询模式 〕</div>
+    <div class="mode-selector">
+      <button class="mode-btn active" id="mode-all" onclick="setMode('all')">三贤齐论</button>
+      <button class="mode-btn" id="mode-select" onclick="setMode('select')">指定顾问</button>
+    </div>
+    <div class="input-label" id="select-hint" style="display:none;margin-bottom:8px;color:rgba(212,180,131,.36)">↑ 点击上方卡片选择顾问</div>
+
+    <div class="input-label">〔 问题类型 〕</div>
+    <div class="qtype-selector">
+      <button class="qtype-btn active" id="qtype-event" onclick="setQtype('event')">占事 · 问单件事</button>
+      <button class="qtype-btn" id="qtype-trend" onclick="setQtype('trend')">论命 · 析整体趋势</button>
+    </div>
+    <div class="qtype-desc" id="qtype-desc">针对某一具体事件作出判断，答案倾向明确、指向是否与建议</div>
+
+    <div class="ask-row">
+      <textarea id="question" placeholder="请输入您的问题，例如：此次创业是否顺利？这份工作我该不该接？" maxlength="500"></textarea>
+      <div class="consult-options">
+        <button class="btn btn-primary" id="ask-btn" onclick="askExperts()">问卦 →</button>
+        <button class="btn" onclick="clearAll()">清空</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="responses-container"></div>
+</div>
+
+<!-- ══ TAB: PROFILE ══ -->
+<div id="tab-profile" style="display:none">
+  <div class="profile-tab-layout">
+    <!-- left: user list -->
+    <div class="user-list-panel">
+      <div class="panel-title">〔 用户列表 〕</div>
+      <div class="user-list" id="user-list"></div>
+      <button class="btn btn-sm" style="width:100%;text-align:center" onclick="newUser()">+ 新建用户</button>
+    </div>
+    <!-- right: form -->
+    <div class="profile-panel" id="profile-form-panel">
+      <div class="profile-panel-header">
+        <span class="profile-panel-title">〔 个人档案 〕</span>
+        <span class="profile-editing-label" id="editing-label"></span>
+      </div>
+      <div class="profile-fields">
+        <div class="field-group">
+          <label>姓名 / 称呼</label>
+          <input type="text" id="p-name" placeholder="如：子鱼">
+        </div>
+        <div class="field-group">
+          <label>性别</label>
+          <select id="p-gender">
+            <option value="">请选择</option>
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>出生日期（公历）</label>
+          <div class="split-input-row">
+            <input type="number" id="p-year" placeholder="年" min="1900" max="2099" oninput="onDateChange()">
+            <input type="number" id="p-month" placeholder="月" min="1" max="12" oninput="onDateChange()">
+            <input type="number" id="p-day" placeholder="日" min="1" max="31" oninput="onDateChange()">
+          </div>
+          <input type="hidden" id="p-date">
+        </div>
+        <div class="field-group">
+          <label>出生时间</label>
+          <div class="split-input-row">
+            <input type="number" id="p-hour" placeholder="时 (0-23)" min="0" max="23" oninput="onTimeChange()">
+            <span class="time-sep">:</span>
+            <input type="number" id="p-min" placeholder="分 (0-59)" min="0" max="59" oninput="onTimeChange()">
+          </div>
+          <input type="hidden" id="p-time">
+        </div>
+        <div class="field-group">
+          <label>出生地</label>
+          <input type="text" id="p-birthplace" placeholder="如：北京市">
+        </div>
+        <div class="field-group">
+          <label>现居地</label>
+          <input type="text" id="p-location" placeholder="如：上海市">
+        </div>
+        <div class="field-group span2">
+          <label>其他信息（职业、感情状况、近期境况等）</label>
+          <textarea id="p-extra" placeholder="可在此自由填写任何补充信息，问卦时会一并提供给先生…"></textarea>
+        </div>
+      </div>
+      <div class="profile-bazi" id="bazi-display" style="display:none">
+        <div class="profile-bazi-title">〔 八字推算结果 〕</div>
+        <div class="bazi-pillars" id="bazi-pillars"></div>
+        <div class="bazi-note" id="bazi-note"></div>
+      </div>
+      <div class="profile-astro" id="astro-display" style="display:none">
+        <div class="profile-astro-title">〔 西方星盘基础 〕</div>
+        <div class="astro-items" id="astro-items"></div>
+        <div class="astro-note" id="astro-note"></div>
+      </div>
+      <div class="profile-actions">
+        <button class="btn btn-primary" onclick="saveUser()">保存档案</button>
+        <button class="btn" onclick="clearForm()">清空表单</button>
+      </div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(201,168,76,.1)">
+        <button class="btn btn-primary" style="width:100%;letter-spacing:.2em" onclick="saveAndConsult()">保存并开始问卦 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB: HISTORY ══ -->
+<div id="tab-history" style="display:none">
+  <div class="history-panel" id="history-panel"></div>
+</div>
+
+<div class="footer-note">天机不可尽泄 · 仅供参考娱乐 · The stars incline but do not compel</div>
+</div>
+
+<script>
+/* ══════════════════════════════
+   八字推算
+   ══════════════════════════════ */
+const TG=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const DZ=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const HOUR_DZ=[0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,0];
+const JIEQI_DAY=[6,4,6,5,6,6,7,7,8,8,7,7];
+
+function calcBazi(dateStr,timeStr){
+  if(!dateStr)return null;
+  const[y,mo,d]=dateStr.split('-').map(Number);
+  const hour=timeStr?parseInt(timeStr.split(':')[0]):-1;
+  // 年柱
+  let yIdx=y-4; if(mo<2||(mo===2&&d<4))yIdx--;
+  const yearTG=TG[((yIdx%10)+10)%10],yearDZ=DZ[((yIdx%12)+12)%12];
+  // 月柱
+  const jq=JIEQI_DAY[mo-1];
+  const mSeq=d>=jq?(mo-2+12)%12:(mo-3+12)%12;
+  const monthDZIdx=(mSeq+2)%12;
+  const yti=TG.indexOf(yearTG);
+  const mTGStart=[2,4,6,8,0][yti%5];
+  const monthTG=TG[(mTGStart+mSeq)%10],monthDZ=DZ[monthDZIdx];
+  // 日柱
+  const a=Math.floor((14-mo)/12),yy=y+4800-a,mm=mo+12*a-3;
+  const jd=d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-Math.floor(yy/100)+Math.floor(yy/400)-32045;
+  const JIAZI_JD=2415011;
+  const off=jd-JIAZI_JD;
+  const dayTG=TG[((off%10)+10)%10],dayDZ=DZ[((off%12)+12)%12];
+  // 时柱
+  let hourTG=null,hourDZ=null;
+  if(hour>=0){
+    const hDZIdx=HOUR_DZ[hour];
+    const hTGStart=[0,2,4,6,8][TG.indexOf(dayTG)%5];
+    hourTG=TG[(hTGStart+hDZIdx)%10]; hourDZ=DZ[hDZIdx];
+  }
+  return{yearTG,yearDZ,monthTG,monthDZ,dayTG,dayDZ,hourTG,hourDZ};
+}
+
+function baziToString(b){
+  if(!b)return'';
+  let s=`年柱：${b.yearTG}${b.yearDZ}　月柱：${b.monthTG}${b.monthDZ}　日柱：${b.dayTG}${b.dayDZ}`;
+  if(b.hourTG)s+=`　时柱：${b.hourTG}${b.hourDZ}`;
+  return s;
+}
+
+/* ══════════════════════════════
+   五行强弱 & 用神推算
+   ══════════════════════════════ */
+const TG_WX={甲:'木',乙:'木',丙:'火',丁:'火',戊:'土',己:'土',庚:'金',辛:'金',壬:'水',癸:'水'};
+
+// 地支藏干 [干, 权重]
+const DZ_CANG={
+  子:[['癸',10]],
+  丑:[['己',6],['癸',3],['辛',1]],
+  寅:[['甲',7],['丙',2],['戊',1]],
+  卯:[['乙',10]],
+  辰:[['戊',6],['乙',3],['癸',1]],
+  巳:[['丙',6],['戊',3],['庚',1]],
+  午:[['丁',7],['己',3]],
+  未:[['己',6],['丁',2],['乙',2]],
+  申:[['庚',6],['壬',3],['戊',1]],
+  酉:[['辛',10]],
+  戌:[['戊',6],['辛',2],['丁',2]],
+  亥:[['壬',7],['甲',3]],
+};
+
+// 五行在各月令的旺相休囚死系数（月支决定）
+const YUELINQ={
+  子:{水:1.5,金:1.2,木:0.8,火:0.5,土:0.6},
+  丑:{土:1.5,水:1.2,金:0.8,木:0.5,火:0.6},
+  寅:{木:1.5,火:1.2,水:0.8,土:0.5,金:0.6},
+  卯:{木:1.5,火:1.2,水:0.8,土:0.5,金:0.6},
+  辰:{土:1.5,木:1.2,火:0.8,金:0.5,水:0.6},
+  巳:{火:1.5,土:1.2,木:0.8,金:0.5,水:0.6},
+  午:{火:1.5,土:1.2,木:0.8,金:0.5,水:0.6},
+  未:{土:1.5,火:1.2,金:0.8,水:0.5,木:0.6},
+  申:{金:1.5,水:1.2,土:0.8,火:0.5,木:0.6},
+  酉:{金:1.5,水:1.2,土:0.8,火:0.5,木:0.6},
+  戌:{土:1.5,金:1.2,火:0.8,木:0.5,水:0.6},
+  亥:{水:1.5,木:1.2,金:0.8,土:0.5,火:0.6},
+};
+
+// 五行生克关系
+const WX_GEN={木:'水',火:'木',土:'火',金:'土',水:'金'}; // 生我
+const WX_KE ={木:'金',火:'水',土:'木',金:'火',水:'土'}; // 克我
+const WX_SHI={木:'火',火:'土',土:'金',金:'水',水:'木'}; // 我生（泄）
+
+function calcWuxing(b){
+  if(!b)return null;
+  const{yearTG,yearDZ,monthTG,monthDZ,dayTG,dayDZ,hourTG,hourDZ}=b;
+  const boost=YUELINQ[monthDZ]||{木:1,火:1,土:1,金:1,水:1};
+  const scores={木:0,火:0,土:0,金:0,水:0};
+
+  const pillars=[[yearTG,yearDZ],[monthTG,monthDZ],[dayTG,dayDZ]];
+  if(hourTG)pillars.push([hourTG,hourDZ]);
+
+  pillars.forEach(([tg,dz])=>{
+    // 天干得1分 × 月令系数
+    const tw=TG_WX[tg]; scores[tw]+= 1*(boost[tw]||1);
+    // 地支藏干
+    const cang=DZ_CANG[dz]||[];
+    const tot=cang.reduce((s,[,w])=>s+w,0);
+    cang.forEach(([c,w])=>{ const wx=TG_WX[c]; scores[wx]+=(w/tot)*(boost[wx]||1); });
+  });
+  // 月令额外加权（月支主气再加一次）
+  const mc=DZ_CANG[monthDZ]||[];
+  const mt=mc.reduce((s,[,w])=>s+w,0);
+  mc.forEach(([c,w])=>{ scores[TG_WX[c]]+=(w/mt)*1; });
+
+  // 四舍五入
+  Object.keys(scores).forEach(k=>scores[k]=Math.round(scores[k]*10)/10);
+
+  const dayWx=TG_WX[dayTG];
+  const total=Object.values(scores).reduce((a,b)=>a+b,0);
+  const genWx=WX_GEN[dayWx]; // 生日主的五行
+  const suppScore=(scores[dayWx]||0)+(scores[genWx]||0);
+  const suppRatio=suppScore/total;
+
+  // 强弱判断（考虑月令得气：月支是否帮扶日主）
+  const monthBoostDay=boost[dayWx]||1;
+  const monthHelps=monthBoostDay>=1.2; // 月令旺/相 = 得令
+  let strength;
+  if(monthHelps && suppRatio>0.35) strength='偏旺';
+  else if(!monthHelps && suppRatio<0.3) strength='偏弱';
+  else if(suppRatio>0.45) strength='偏旺';
+  else if(suppRatio<0.25) strength='偏弱';
+  else strength='中和';
+
+  // 用神忌神
+  let yong,ji;
+  if(strength==='偏弱'){
+    yong=[genWx,dayWx];           // 生我、帮我
+    ji=[WX_KE[dayWx],WX_SHI[dayWx]]; // 克我、泄我
+  } else if(strength==='偏旺'){
+    yong=[WX_KE[dayWx],WX_SHI[dayWx]]; // 克我、泄我
+    ji=[genWx,dayWx];
+  } else {
+    // 中和：调候为主，取克我和泄我中分数低的作为辅助
+    yong=[WX_KE[dayWx],WX_SHI[dayWx]];
+    ji=[genWx];
+  }
+
+  const scoreStr=Object.entries(scores).map(([k,v])=>`${k}${v.toFixed(1)}`).join(' ');
+  return{dayWx,strength,yong,ji,scores,scoreStr,suppRatio:Math.round(suppRatio*100)};
+}
+
+// 生成给命理先生的五行分析前置说明
+function buildWuxingNote(b){
+  if(!b)return'';
+  const wx=calcWuxing(b);
+  if(!wx)return'';
+  const{dayTG,monthTG,monthDZ}=b;
+  return `【系统五行分析（请严格遵守，不得推翻）】
+日主：${dayTG}（${wx.dayWx}）
+月令：${monthTG}${monthDZ}，${wx.dayWx}在${monthDZ}月处${wx.strength==='偏弱'?'失令':'得令'}
+五行力量：${wx.scoreStr}
+日主生扶比例：${wx.suppRatio}%（${wx.suppRatio<30?'明显偏弱':wx.suppRatio>50?'偏旺':'中和'}）
+日主强弱结论：${wx.strength}
+喜用神：${wx.yong.join('、')}（请围绕此展开分析）
+忌　神：${wx.ji.join('、')}
+以上由系统精确计算，分析时必须以此为准，不得自行重新判断强弱或用神。`;
+}
+
+/* ══════════════════════════════
+   西方占星推算（太阳/月亮/上升星座）
+   ══════════════════════════════ */
+const ZODIAC_SIGNS=[
+  {zh:'白羊座',en:'Aries',sym:'♈'},{zh:'金牛座',en:'Taurus',sym:'♉'},
+  {zh:'双子座',en:'Gemini',sym:'♊'},{zh:'巨蟹座',en:'Cancer',sym:'♋'},
+  {zh:'狮子座',en:'Leo',sym:'♌'},{zh:'处女座',en:'Virgo',sym:'♍'},
+  {zh:'天秤座',en:'Libra',sym:'♎'},{zh:'天蝎座',en:'Scorpio',sym:'♏'},
+  {zh:'射手座',en:'Sagittarius',sym:'♐'},{zh:'摩羯座',en:'Capricorn',sym:'♑'},
+  {zh:'水瓶座',en:'Aquarius',sym:'♒'},{zh:'双鱼座',en:'Pisces',sym:'♓'},
+];
+
+// [signIndex, start_month, start_day]
+const SIGN_BOUNDS=[[0,3,21],[1,4,20],[2,5,21],[3,6,21],[4,7,23],[5,8,23],
+  [6,9,23],[7,10,23],[8,11,22],[9,12,22],[10,1,20],[11,2,19]];
+// day-of-year table (non-leap)
+const _DOY=[0,31,59,90,120,151,181,212,243,273,304,334];
+const SIGN_BDOYS=SIGN_BOUNDS.map(([i,bm,bd])=>({i, doy:_DOY[bm-1]+bd}));
+
+function getSunSign(dateStr){
+  const[,m,d]=dateStr.split('-').map(Number);
+  const doy=_DOY[m-1]+d;
+  // find the sign whose start is the largest doy still <= current doy
+  let best={i:9,doy:-1}; // Capricorn default for Jan 1–19
+  for(const b of SIGN_BDOYS){
+    if(b.doy<=doy && b.doy>best.doy) best=b;
+  }
+  return ZODIAC_SIGNS[best.i];
+}
+
+function getJD(y,m,d,hour=12){
+  const a=Math.floor((14-m)/12), yy=y+4800-a, mm=m+12*a-3;
+  return d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)
+    -Math.floor(yy/100)+Math.floor(yy/400)-32045+(hour-12)/24;
+}
+
+function getMoonSign(dateStr,timeStr){
+  const[y,m,d]=dateStr.split('-').map(Number);
+  const hour=timeStr?parseInt(timeStr):12;
+  const jd=getJD(y,m,d,hour);
+  // anchor: 2000-01-06 18:14 UTC new moon, JD 2451550.259, sun ~286° (Cap)
+  const daysSince=jd-2451550.259;
+  const moonLon=((286+daysSince*13.176371)%360+360)%360;
+  return ZODIAC_SIGNS[Math.floor(moonLon/30)];
+}
+
+// Rising sign requires birth time + latitude → approximate using RAMC method
+// We use a simplified version: LST at birth + ascendant table (obliquity 23.44°)
+function getRisingSign(dateStr, timeStr, lat=30){
+  if(!timeStr) return null;
+  const[y,m,d]=dateStr.split('-').map(Number);
+  const hour=parseInt(timeStr), min=timeStr.includes(':')? parseInt(timeStr.split(':')[1]):0;
+  const ut=hour+min/60;
+  const jd=getJD(y,m,d,ut);
+  // GMST at J2000.0: 280.46061837, advancing 360.98564736629 deg/day
+  const gmst=((280.46061837+360.98564736629*(jd-2451545.0))%360+360)%360;
+  // approximate LST using longitude=0 (we don't have location's longitude, use 0 as offset)
+  const lst=gmst; // simplified, ignores longitude offset
+  // ascendant = lst + 90 (rough approximation for mid-latitudes)
+  // proper formula: tan(ASC) = -cos(RAMC) / (sin(RAMC)*cos(e) + tan(lat)*sin(e))
+  const e=23.44*Math.PI/180, latR=lat*Math.PI/180, ramcR=lst*Math.PI/180;
+  const y2=-Math.cos(ramcR);
+  const x2=Math.sin(ramcR)*Math.cos(e)+Math.tan(latR)*Math.sin(e);
+  let asc=Math.atan2(y2,x2)*180/Math.PI;
+  // adjust quadrant
+  if(Math.sin(ramcR)>0) asc+=180;
+  asc=((asc%360)+360)%360;
+  return ZODIAC_SIGNS[Math.floor(asc/30)];
+}
+
+function calcAstro(dateStr, timeStr){
+  if(!dateStr) return null;
+  const sun=getSunSign(dateStr);
+  const moon=getMoonSign(dateStr, timeStr);
+  const rising=timeStr ? getRisingSign(dateStr, timeStr) : null;
+  return{sun, moon, rising, hasTime:!!timeStr};
+}
+
+function astroToString(a){
+  if(!a) return'';
+  let s=`太阳星座：${a.sun.zh}　月亮星座：${a.moon.zh}`;
+  if(a.rising) s+=`　上升星座：${a.rising.zh}（参考值）`;
+  return s;
+}
+
+let toastTimer=null;
+function showToast(msg,duration=2200){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),duration);
+}
+
+/* ══════════════════════════════
+   Storage helpers
+   ══════════════════════════════ */
+/* ══════════════════════════════
+   Storage helpers — localStorage
+   key-value store, sync under the hood but wrapped async for API compat
+   ══════════════════════════════ */
+async function sGet(k){
+  try{ const v=localStorage.getItem(k); return v!=null?{key:k,value:v}:null; }catch{return null;}
+}
+async function sSet(k,v){
+  try{ localStorage.setItem(k,v); return{key:k,value:v}; }catch{return null;}
+}
+async function sDel(k){
+  try{ localStorage.removeItem(k); return{key:k,deleted:true}; }catch{return null;}
+}
+async function sList(pre){
+  try{
+    const keys=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith(pre))keys.push(k);
+    }
+    return{keys};
+  }catch{return{keys:[]};}
+}
+
+/* ══════════════════════════════
+   Multi-user profile management
+   ══════════════════════════════ */
+let allUsers={};       // { uid: {name,gender,date,time,birthplace,location} }
+let activeUid=null;    // currently selected user for consulting
+
+async function loadAllUsers(){
+  const r=await sGet('users');
+  if(r){try{allUsers=JSON.parse(r.value);}catch{allUsers={};}}
+  const ar=await sGet('activeUid');
+  if(ar)activeUid=ar.value;
+  renderUserList();
+  showWelcome();
+}
+
+function showWelcome(){
+  const container=document.getElementById('welcome-users');
+  container.innerHTML='';
+  const ids=Object.keys(allUsers);
+  ids.forEach(uid=>{
+    const u=allUsers[uid];
+    const btn=document.createElement('button');
+    btn.className='welcome-user-btn';
+    // build meta line: gender + birthdate if available
+    const meta=[u.gender, u.date].filter(Boolean).join(' · ');
+    btn.innerHTML=`
+      <div class="welcome-user-avatar">${(u.name||'?').slice(0,1)}</div>
+      <div class="welcome-user-info">
+        <div class="welcome-user-name">${u.name||'未命名'}</div>
+        ${meta?`<div class="welcome-user-meta">${meta}</div>`:''}
+      </div>
+      <span style="color:rgba(201,168,76,.4);font-size:.8rem">→</span>`;
+    btn.onclick=()=>welcomeSelect(uid);
+    container.appendChild(btn);
+  });
+}
+
+function welcomeSelect(uid){
+  activeUid=uid;
+  if(uid) sSet('activeUid',uid); else sDel('activeUid');
+  // sync profile tab highlight
+  renderUserList();
+  renderIdentityBar();
+  // dismiss overlay
+  const ov=document.getElementById('welcome-overlay');
+  ov.classList.add('hidden');
+  setTimeout(()=>ov.style.display='none', 380);
+}
+
+function welcomeNewUser(){
+  showTab('profile');
+  newUser();
+  const ov=document.getElementById('welcome-overlay');
+  ov.classList.add('hidden');
+  setTimeout(()=>ov.style.display='none', 380);
+}
+
+async function persistUsers(){
+  await sSet('users',JSON.stringify(allUsers));
+}
+
+function renderUserList(){
+  const ul=document.getElementById('user-list');
+  const ids=Object.keys(allUsers);
+  if(!ids.length){
+    ul.innerHTML='<div class="user-list-empty">暂无用户</div>';
+    renderIdentityBar();
+    return;
+  }
+  ul.innerHTML='';
+  ids.forEach(uid=>{
+    const u=allUsers[uid];
+    const div=document.createElement('div');
+    div.className='user-item'+(uid===activeUid?' active':'');
+    const initials=(u.name||'?').slice(0,1);
+    div.innerHTML=`
+      <div class="user-item-avatar">${initials}</div>
+      <span class="user-item-name">${u.name||'未命名'}</span>
+      <button class="user-item-del" onclick="deleteUser(event,'${uid}')">删</button>`;
+    div.addEventListener('click',()=>selectUser(uid));
+    ul.appendChild(div);
+  });
+  renderIdentityBar();
+}
+
+function renderIdentityBar(){
+  const chips=document.getElementById('identity-chips');
+  if(!chips)return;
+  chips.innerHTML='';
+  // 匿名选项
+  const anon=document.createElement('span');
+  anon.className='identity-chip none'+(activeUid===null?' active':'');
+  anon.textContent='匿名';
+  anon.onclick=()=>selectIdentity(null);
+  chips.appendChild(anon);
+  // 每个用户一个 chip
+  Object.entries(allUsers).forEach(([uid,u])=>{
+    const chip=document.createElement('span');
+    chip.className='identity-chip'+(uid===activeUid?' active':'');
+    chip.textContent=u.name||'未命名';
+    chip.onclick=()=>selectIdentity(uid);
+    chips.appendChild(chip);
+  });
+}
+
+function selectIdentity(uid){
+  activeUid=uid;
+  if(uid)sSet('activeUid',uid); else sDel('activeUid');
+  renderIdentityBar();
+  // also sync profile tab selection highlight
+  document.querySelectorAll('#user-list .user-item').forEach(el=>el.classList.remove('active'));
+  if(uid){
+    const items=document.querySelectorAll('#user-list .user-item');
+    const ids=Object.keys(allUsers);
+    const idx=ids.indexOf(uid);
+    if(idx>=0&&items[idx])items[idx].classList.add('active');
+  }
+}
+
+function selectUser(uid){
+  activeUid=uid;
+  sSet('activeUid',uid);
+  renderUserList();
+  fillFormFromUser(allUsers[uid]);
+  document.getElementById('editing-label').textContent='正在编辑：'+allUsers[uid].name;
+}
+
+function newUser(){
+  activeUid=null;
+  clearForm();
+  document.getElementById('editing-label').textContent='新建用户';
+  // deselect all in list
+  document.querySelectorAll('.user-item').forEach(el=>el.classList.remove('active'));
+}
+
+function onDateChange(){
+  const yEl=document.getElementById('p-year');
+  const mEl=document.getElementById('p-month');
+  const dEl=document.getElementById('p-day');
+  const y=parseInt(yEl.value), m=parseInt(mEl.value), d=parseInt(dEl.value);
+
+  // validate ranges
+  const yOk = !yEl.value || (y>=1900 && y<=2099);
+  const mOk = !mEl.value || (m>=1 && m<=12);
+  // days in month (rough: allow up to 31 always, exact check on save)
+  const dOk = !dEl.value || (d>=1 && d<=31);
+
+  yEl.style.borderColor = yEl.value && !yOk ? 'rgba(220,60,60,.7)' : '';
+  mEl.style.borderColor = mEl.value && !mOk ? 'rgba(220,60,60,.7)' : '';
+  dEl.style.borderColor = dEl.value && !dOk ? 'rgba(220,60,60,.7)' : '';
+
+  if(yEl.value && mEl.value && dEl.value && yOk && mOk && dOk){
+    const mm=String(m).padStart(2,'0'), dd=String(d).padStart(2,'0');
+    document.getElementById('p-date').value=`${y}-${mm}-${dd}`;
+  } else {
+    document.getElementById('p-date').value='';
+  }
+  updateBaziDisplay();
+}
+
+function onTimeChange(){
+  const hEl=document.getElementById('p-hour');
+  const mEl=document.getElementById('p-min');
+  const h=parseInt(hEl.value), m=parseInt(mEl.value);
+
+  const hOk = !hEl.value || (h>=0 && h<=23);
+  const mOk = !mEl.value || (m>=0 && m<=59);
+
+  hEl.style.borderColor = hEl.value && !hOk ? 'rgba(220,60,60,.7)' : '';
+  mEl.style.borderColor = mEl.value && !mOk ? 'rgba(220,60,60,.7)' : '';
+
+  if(hEl.value!=='' && mEl.value!=='' && hOk && mOk){
+    document.getElementById('p-time').value=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  } else {
+    document.getElementById('p-time').value='';
+  }
+  updateBaziDisplay();
+}
+
+function setDateInputs(dateStr){
+  if(!dateStr){ ['p-year','p-month','p-day'].forEach(id=>document.getElementById(id).value=''); return; }
+  const [y,m,d]=dateStr.split('-');
+  document.getElementById('p-year').value=parseInt(y)||'';
+  document.getElementById('p-month').value=parseInt(m)||'';
+  document.getElementById('p-day').value=parseInt(d)||'';
+}
+
+function setTimeInputs(timeStr){
+  if(!timeStr){ ['p-hour','p-min'].forEach(id=>document.getElementById(id).value=''); return; }
+  const [h,m]=timeStr.split(':');
+  document.getElementById('p-hour').value=parseInt(h)||0;
+  document.getElementById('p-min').value=parseInt(m)||0;
+}
+
+async function saveAndConsult(){
+  const ok = await saveUser();
+  if(ok) showTab('consult');
+}
+
+function fillFormFromUser(u){
+  ['p-year','p-month','p-day','p-hour','p-min'].forEach(id=>document.getElementById(id).style.borderColor='');
+  document.getElementById('p-name').value=u.name||'';
+  document.getElementById('p-gender').value=u.gender||'';
+  setDateInputs(u.date||'');
+  document.getElementById('p-date').value=u.date||'';
+  setTimeInputs(u.time||'');
+  document.getElementById('p-time').value=u.time||'';
+  document.getElementById('p-birthplace').value=u.birthplace||'';
+  document.getElementById('p-location').value=u.location||'';
+  document.getElementById('p-extra').value=u.extra||'';
+  updateBaziDisplay();
+}
+
+function clearForm(){
+  ['p-name','p-date','p-time','p-birthplace','p-location','p-extra'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-gender').value='';
+  setDateInputs(''); setTimeInputs('');
+  ['p-year','p-month','p-day','p-hour','p-min'].forEach(id=>document.getElementById(id).style.borderColor='');
+  document.getElementById('bazi-display').style.display='none';
+  document.getElementById('astro-display').style.display='none';
+  if(!activeUid)document.getElementById('editing-label').textContent='新建用户';
+}
+
+async function saveUser(){
+  const name=document.getElementById('p-name').value.trim();
+  if(!name){showToast('请先填写姓名');return false;}
+
+  // validate date if any date field is filled
+  const yv=document.getElementById('p-year').value;
+  const mv=document.getElementById('p-month').value;
+  const dv=document.getElementById('p-day').value;
+  if(yv||mv||dv){
+    const y=parseInt(yv), m=parseInt(mv), d=parseInt(dv);
+    if(!yv||!mv||!dv)          {showToast('出生日期请填写完整（年、月、日）');return false;}
+    if(y<1900||y>2099)         {showToast('年份请填写 1900–2099');return false;}
+    if(m<1||m>12)              {showToast('月份请填写 1–12');return false;}
+    // check days in month using Date
+    const maxDay=new Date(y,m,0).getDate();
+    if(d<1||d>maxDay)          {showToast(`${y}年${m}月最多 ${maxDay} 天`);return false;}
+  }
+
+  // validate time if any time field is filled
+  const hv=document.getElementById('p-hour').value;
+  const minv=document.getElementById('p-min').value;
+  if(hv!==''||minv!==''){
+    const h=parseInt(hv), mn=parseInt(minv);
+    if(hv===''||minv==='')     {showToast('出生时间请填写完整（时、分）');return false;}
+    if(h<0||h>23)              {showToast('小时请填写 0–23');return false;}
+    if(mn<0||mn>59)            {showToast('分钟请填写 0–59');return false;}
+  }
+
+  const uid=activeUid||('u'+Date.now());
+  allUsers[uid]={
+    name,
+    gender:document.getElementById('p-gender').value,
+    date:document.getElementById('p-date').value,
+    time:document.getElementById('p-time').value,
+    birthplace:document.getElementById('p-birthplace').value.trim(),
+    location:document.getElementById('p-location').value.trim(),
+    extra:document.getElementById('p-extra').value.trim(),
+  };
+  activeUid=uid;
+  renderUserList();
+  document.getElementById('editing-label').textContent='正在编辑：'+name;
+  showToast('✓ 档案已保存');
+  sSet('activeUid',uid);
+  persistUsers();
+  return true;
+}
+
+async function deleteUser(e,uid){
+  e.stopPropagation();
+  const btn = e.target.closest('button');  // currentTarget is null in inline onclick
+  if(!btn) return;
+  // two-step confirm: first click turns red, second click deletes
+  if(btn.dataset.confirming !== '1'){
+    btn.dataset.confirming = '1';
+    btn.textContent = '确认?';
+    btn.style.color = 'rgba(220,80,80,.9)';
+    btn.style.borderColor = 'rgba(220,80,80,.5)';
+    setTimeout(()=>{
+      if(btn.dataset.confirming === '1'){  // guard in case already deleted
+        btn.dataset.confirming = '';
+        btn.textContent = '删';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }
+    }, 2500);
+    return;
+  }
+  delete allUsers[uid];
+  if(activeUid === uid){ activeUid = null; sDel('activeUid'); clearForm(); }
+  persistUsers();
+  renderUserList();
+  showToast('已删除');
+}
+
+function updateBaziDisplay(){
+  const dateVal=document.getElementById('p-date').value;
+  const timeVal=document.getElementById('p-time').value;
+
+  // bazi
+  if(!dateVal){
+    document.getElementById('bazi-display').style.display='none';
+    document.getElementById('astro-display').style.display='none';
+    return;
+  }
+  const b=calcBazi(dateVal,timeVal);
+  if(b){
+    document.getElementById('bazi-display').style.display='block';
+    const pillars=[
+      {label:'年柱',val:b.yearTG+b.yearDZ},{label:'月柱',val:b.monthTG+b.monthDZ},
+      {label:'日柱',val:b.dayTG+b.dayDZ}
+    ];
+    if(b.hourTG)pillars.push({label:'时柱',val:b.hourTG+b.hourDZ});
+    document.getElementById('bazi-pillars').innerHTML=pillars.map(p=>
+      `<div class="bazi-pillar"><span class="bazi-pillar-label">${p.label}</span><span class="bazi-pillar-val">${p.val}</span></div>`
+    ).join('');
+    document.getElementById('bazi-note').textContent=`日主：${b.dayTG}（日天干为命主）`;
+  }
+
+  // western astrology
+  const a=calcAstro(dateVal,timeVal);
+  if(a){
+    document.getElementById('astro-display').style.display='block';
+    const items=[
+      {label:'太阳星座',val:`${a.sun.sym} ${a.sun.zh}`},
+      {label:'月亮星座',val:`${a.moon.sym} ${a.moon.zh}`},
+    ];
+    if(a.rising) items.push({label:'上升星座',val:`${a.rising.sym} ${a.rising.zh}`});
+    document.getElementById('astro-items').innerHTML=items.map(i=>
+      `<div class="astro-item"><span class="astro-item-label">${i.label}</span><span class="astro-item-val">${i.val}</span></div>`
+    ).join('');
+    document.getElementById('astro-note').textContent=
+      a.hasTime ? '上升星座为近似值，精确值需出生地经纬度校正' : '填写出生时辰后可计算月亮与上升星座';
+  }
+}
+
+// Build profile summary string for info prefill
+function buildProfileSummary(u){
+  if(!u)return'';
+  const lines=[];
+  if(u.name)lines.push(`姓名：${u.name}`);
+  if(u.gender)lines.push(`性别：${u.gender}`);
+  if(u.date){
+    lines.push(`出生日期：${u.date}`);
+    const b=calcBazi(u.date,u.time);
+    if(b)lines.push(`八字（系统推算）：${baziToString(b)}`);
+    const a=calcAstro(u.date,u.time);
+    if(a)lines.push(`星盘（系统推算）：${astroToString(a)}`);
+  }
+  if(u.time)lines.push(`出生时辰：${u.time}`);
+  if(u.birthplace)lines.push(`出生地：${u.birthplace}`);
+  if(u.location)lines.push(`现居地：${u.location}`);
+  if(u.extra)lines.push(`其他信息：${u.extra}`);
+  return lines.join('\n');
+}
+
+// AI语义判断：档案内容是否已覆盖每条需求，返回 [{text, status, value?}]
+async function classifyInfo(mergedText, u){
+  const lines = mergedText.split('\n')
+    .map(l => l.replace(/^[·•\-\*]\s*/,'').trim())
+    .filter(Boolean);
+
+  if(!lines.length) return [];
+
+  const profileSummary = buildProfileSummary(u) || '（无档案信息）';
+
+  const prompt =
+`以下是用户的个人档案信息：
+${profileSummary}
+
+以下是顾问需要了解的信息清单（共${lines.length}条）：
+${lines.map((l,i)=>`${i+1}. ${l}`).join('\n')}
+
+请逐条判断：档案中是否已经提供了该条所需的信息？
+判断标准：只看档案里有没有对应的实质内容，不要根据条目的表述方式去猜测。例如"情感状态"，除非档案里明确写了感情状况，否则就是未提供。
+
+只输出一个JSON数组，格式为：
+[{"i":1,"have":true},{"i":2,"have":false},...]
+不要加任何解释或代码块。`;
+
+  let result;
+  try{
+    const raw = await callClaude('你是信息核查助手，只输出JSON，不加任何解释。', prompt);
+    const clean = raw.replace(/```[a-z]*/g,'').replace(/```/g,'').trim();
+    result = JSON.parse(clean);
+  }catch{
+    // fallback: all need
+    return lines.map(text=>({text, status:'need'}));
+  }
+
+  // build value map for known fields (for display inline)
+  const valueMap = u ? {
+    '姓名': u.name, '性别': u.gender, '出生日期': u.date,
+    '出生时': u.time, '时辰': u.time, '出生地': u.birthplace,
+    '居住': u.location, '所在': u.location,
+  } : {};
+
+  return lines.map((text, idx)=>{
+    const entry = result.find(r=>r.i === idx+1);
+    const have = entry?.have === true;
+    if(!have) return {text, status:'need'};
+    // try to find a displayable value for known structured fields
+    let value = null;
+    for(const [k,v] of Object.entries(valueMap)){
+      if(text.includes(k) && v){ value = v; break; }
+    }
+    // bazi special case
+    if(text.includes('八字')||text.includes('四柱')){
+      const b = u?.date ? calcBazi(u.date, u.time) : null;
+      if(b) value = `${b.yearTG}${b.yearDZ} ${b.monthTG}${b.monthDZ} ${b.dayTG}${b.dayDZ}${b.hourTG?' '+b.hourTG+b.hourDZ:''}`;
+    }
+    return {text, status:'have', value};
+  });
+}
+
+/* ══════════════════════════════
+   History
+   ══════════════════════════════ */
+async function saveHistory(entry){await sSet('hist:'+Date.now(),JSON.stringify(entry));}
+
+async function renderHistory(){
+  const panel=document.getElementById('history-panel');
+  panel.innerHTML='<div class="history-empty">加载中…</div>';
+  const list=await sList('hist:');
+  const keys=(list?.keys||[]).sort().reverse();
+  if(!keys.length){panel.innerHTML='<div class="history-empty">暂无历史记录</div>';return;}
+  panel.innerHTML='';
+  for(const key of keys){
+    const r=await sGet(key); if(!r)continue;
+    let e; try{e=JSON.parse(r.value);}catch{continue;}
+    const item=document.createElement('div');
+    item.className='history-item';
+    const ts=new Date(e.ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const qtLabel=e.qtype==='event'?'占事':'论命';
+    const userBadge=e.userName?`<span class="history-user-badge">${e.userName}</span>`:'';
+    item.innerHTML=`
+      <div class="history-header" onclick="toggleHistItem(this)">
+        <span class="history-q">${e.question}</span>
+        <div class="history-meta">
+          <span class="history-qtype">${qtLabel}</span>
+          ${userBadge}
+          <span class="history-time">${ts}</span>
+          <button class="btn history-del btn-sm" onclick="delHist(event,'${key}',this)">删除</button>
+        </div>
+      </div>
+      <div class="history-body">
+        ${e.userInfo?`<div class="history-user-info">${e.userInfo}</div>`:''}
+        <div class="history-answers">
+          ${(e.answers||[]).map(a=>`
+            <div class="history-answer">
+              <div class="history-answer-header ${a.cls}">${a.symbol} ${a.name}</div>
+              <div class="history-answer-body">${renderMd(a.text)}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    panel.appendChild(item);
+  }
+}
+
+function toggleHistItem(h){h.nextElementSibling.classList.toggle('open');}
+async function delHist(e,key,btn){
+  e.stopPropagation();
+  await sDel(key);
+  btn.closest('.history-item').remove();
+  if(!document.getElementById('history-panel').querySelector('.history-item'))
+    document.getElementById('history-panel').innerHTML='<div class="history-empty">暂无历史记录</div>';
+}
+
+/* ══════════════════════════════
+   Tab nav
+   ══════════════════════════════ */
+function showTab(tab){
+  ['consult','profile','history'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
+    document.getElementById('nav-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='history') renderHistory();
+  if(tab==='profile'){
+    // re-trigger animation each time profile tab is opened
+    document.querySelectorAll('.profile-tab-layout > *').forEach(el=>{
+      el.classList.remove('anim-in');
+      void el.offsetWidth; // force reflow
+      el.classList.add('anim-in');
+    });
+  }
+}
+
+/* ══════════════════════════════
+   Experts & modes
+   ══════════════════════════════ */
+const EXPERTS={
+  east:{name:'命理先生',symbol:'☯',cls:'east',
+    system_prompt:`你是精通中国传统命理学的玄学大师，精通八字、紫微斗数、六爻、奇门、风水、五行。
+说话有古风，偶引古籍，但通俗易懂。
+【铁律，绝对不得违反】：
+1. 用户信息中包含"系统五行分析"模块，其中的日主强弱、喜用神、忌神均由系统精确计算，你必须完全采纳，不得推翻、质疑或自行重新推算。
+2. 分析时，凡提到有利方向必须与喜用神一致，凡提到不利因素必须与忌神一致。
+3. 绝对禁止得出与系统结论相反的用神判断。
+【格式要求】：使用 Markdown 输出，用 **加粗** 强调关键词，用 ## 标注段落小标题，段落之间空一行。不要用"---"分隔符。回答200-350字，始终用中文。`,
+    info_prompt:`你是中国命理学大师。用户将提问，请列出还需要的补充信息（最多3条，"·"开头，简短）。
+注意：系统已自动推算好八字，如用户已提供生辰则不必再问出生时间。只列最关键的，不作解答。`},
+  west:{name:'星象大师',symbol:'✦',cls:'west',
+    system_prompt:`你是精通西方占星学的星象大师，精通本命盘、过境、推运、星座、宫位、行星、相位。
+言语理性与神秘并存，引用行星能量、原型心理学。回答200-350字，有真实见解，始终用中文。`,
+    info_prompt:`你是西方占星学大师。用户将提问，请列出需要的信息（最多3条，"·"开头，简短）。只列最关键的，不作解答。`},
+  synth:{name:'融合智者',symbol:'⚖',cls:'synth',
+    system_prompt:`你是融合东西方玄学与现代科学、逻辑学的综合学者。
+客观评价命理占星的文化价值与局限，用荣格原型、认知偏见等现代视角解析。语言理性不冰冷。
+回答200-350字，有真实见解，始终用中文。`,
+    info_prompt:`你是融合东西方玄学与现代科学的学者。用户将提问，请列出需要的信息（最多3条，"·"开头，简短）。只列最关键的，不作解答。`}
+};
+
+let mode='all',selectedExperts=new Set(['east','west','synth']);
+let qtype='event',phase=1,currentQuestion='',mergedRequirements='';
+// 每轮问卦后保留的上下文，供追问使用
+// convHistory[id] = [{role,content}, ...]  (标准 messages 格式)
+// sharedContext = { userInfo, wuxingNote, pre } — 各专家共享的基础信息
+let convHistory={};
+let sharedContext={};
+
+const QTYPE_CFG={
+  event:{desc:'针对某一具体事件作出判断，答案倾向明确、指向是否与建议',
+         ph:'请输入您的问题，例如：此次创业是否顺利？这份工作我该不该接？',
+         pre:'【占事·问单件事】请给出明确的分析与建议，判断吉凶可行性。'},
+  trend:{desc:'从整体命局出发分析一段时间内的运势走向，答案侧重方向性与规律性',
+         ph:'请输入您的问题，例如：我今年整体运势如何？近三年事业走向怎样？',
+         pre:'【论命·析整体趋势】请从宏观角度分析运势走向、规律与建议。'}
+};
+
+function setQtype(t){
+  qtype=t;
+  document.querySelectorAll('.qtype-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('qtype-'+t).classList.add('active');
+  document.getElementById('qtype-desc').textContent=QTYPE_CFG[t].desc;
+  document.getElementById('question').placeholder=QTYPE_CFG[t].ph;
+}
+
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mode-'+m).classList.add('active');
+  document.getElementById('select-hint').style.display=m==='select'?'block':'none';
+  if(m==='all'){
+    selectedExperts=new Set(['east','west','synth']);
+    ['east','west','synth'].forEach(e=>document.getElementById('card-'+e).classList.remove('active'));
+  }else{
+    selectedExperts=new Set();
+    ['east','west','synth'].forEach(e=>document.getElementById('card-'+e).classList.remove('active'));
+  }
+}
+
+function toggleExpert(id){
+  if(mode!=='select')return;
+  const c=document.getElementById('card-'+id);
+  if(selectedExperts.has(id)){selectedExperts.delete(id);c.classList.remove('active');}
+  else{selectedExperts.add(id);c.classList.add('active');}
+}
+
+function clearAll(){
+  phase=1;currentQuestion='';
+  convHistory={};sharedContext={};
+  document.getElementById('question').value='';
+  document.getElementById('responses-container').innerHTML='';
+  const btn=document.getElementById('ask-btn');
+  btn.textContent='问卦 →';btn.onclick=askExperts;btn.disabled=false;
+}
+
+/* ══════════════════════════════
+   Claude API
+   ══════════════════════════════ */
+async function callClaude(sys, msgOrMessages){
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  const timeStr=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  const sysWithTime=`【当前时间】${dateStr} ${timeStr}\n\n${sys}`;
+  const messages=Array.isArray(msgOrMessages)?msgOrMessages:[{role:'user',content:msgOrMessages}];
+  const res=await fetch('/api',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sysWithTime,messages})
+  });
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const d=await res.json();
+  if(d.error) throw new Error(d.error.message||JSON.stringify(d.error));
+  return d.content?.[0]?.text||'（暂无回应）';
+}
+
+// lightweight markdown → HTML (handles **bold**, *em*, ## headings, blank-line paragraphs)
+function renderMd(text){
+  // normalize line endings, split into blocks by blank lines
+  const blocks = text.replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n').split(/\n\n+/);
+  return blocks.map(block=>{
+    const line = block.trim();
+    if(!line)return'';
+    // headings
+    if(line.startsWith('### '))return`<h4>${inlineMd(line.slice(4))}</h4>`;
+    if(line.startsWith('## '))return`<h3>${inlineMd(line.slice(3))}</h3>`;
+    if(line.startsWith('# '))return`<h3>${inlineMd(line.slice(2))}</h3>`;
+    // treat as paragraph (preserve single \n as <br> within block)
+    const inner = line.split('\n').map(inlineMd).join('<br>');
+    return`<p>${inner}</p>`;
+  }).join('');
+}
+
+function inlineMd(s){
+  return s
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code style="font-size:.85em;opacity:.8">$1</code>');
+}
+
+function typewrite(el, text, spd=16){
+  el.classList.add('typing-cursor');
+  let i = 0;
+  const t = setInterval(()=>{
+    i++;
+    // show raw text during typing (avoid broken partial-markdown rendering)
+    el.textContent = text.slice(0, i);
+    if(i >= text.length){
+      clearInterval(t);
+      el.classList.remove('typing-cursor');
+      // final render with full markdown
+      el.innerHTML = renderMd(text);
+    }
+  }, spd);
+}
+
+/* ══════════════════════════════
+   Phase 1 — gather info with status panel
+   ══════════════════════════════ */
+async function askExperts(){
+  const q=document.getElementById('question').value.trim();
+  if(!q){showToast('请输入您的问题');return;}
+  if(!selectedExperts.size){showToast('请至少选择一位顾问');return;}
+
+  phase=2;currentQuestion=q;
+  const btn=document.getElementById('ask-btn');
+  btn.disabled=true;btn.textContent='会诊中…';
+
+  const container=document.getElementById('responses-container');
+  container.innerHTML='';
+  const expertList=[...selectedExperts];
+  const pre=QTYPE_CFG[qtype].pre;
+  const activeUser=activeUid?allUsers[activeUid]:null;
+
+  const shell=document.createElement('div');
+  shell.className='info-gather-section';shell.id='info-gather-section';
+  shell.innerHTML=`
+    <div class="gather-title"><span>三位先生正在会诊…</span></div>
+
+    <div class="req-list-box" id="req-list-box">
+      <div class="req-list-header">
+        <span>综合信息需求</span>
+        <span id="req-user-label" style="color:var(--gold-light);font-size:.74rem;margin-left:6px">${activeUser?'· '+activeUser.name:''}</span>
+        <div class="loading-dots" id="merge-loading"><span></span><span></span><span></span></div>
+        <div class="expert-badges" id="expert-badges"></div>
+      </div>
+      <div class="req-list-body" id="req-list-body" style="display:none"></div>
+      <div class="supplement-wrap" id="supplement-wrap" style="display:none">
+        <div class="supplement-label">〔 补充信息 〕请填写上方黄色条目尚未提供的信息</div>
+        <textarea id="unified-ans" placeholder="在此补充还未提供的信息…"></textarea>
+      </div>
+    </div>
+
+    <div class="gather-btn-row">
+      <button class="btn btn-primary" id="submit-info-btn" onclick="submitInfo()" disabled>问卦 →</button>
+      <button class="btn" onclick="clearAll()">重新提问</button>
+    </div>`;
+  container.appendChild(shell);
+
+  expertList.forEach(id=>{
+    const s=document.createElement('span');
+    s.className=`expert-badge ${id}`;
+    s.textContent=`${EXPERTS[id].symbol} ${EXPERTS[id].name}`;
+    document.getElementById('expert-badges').appendChild(s);
+  });
+
+  // fetch raw info needs in parallel
+  const infoMsg=`${pre}\n用户的问题是：${q}`;
+  const rawLists=await Promise.all(expertList.map(async id=>{
+    try{return await callClaude(EXPERTS[id].info_prompt,infoMsg);}catch{return'';}
+  }));
+
+  // merge
+  const mergePrompt=`将以下${expertList.length}位专家各自的信息需求清单合并去重，整理为一份统一清单。
+每条用"·"开头，简短清晰，只保留最关键的3-5条，只输出清单，不加任何说明或开头语。
+
+${rawLists.map((r,i)=>`【${EXPERTS[expertList[i]].name}】\n${r}`).join('\n\n')}`;
+
+  let merged='';
+  try{merged=await callClaude('你是信息整合助手，只输出合并后的信息清单，不加任何开头语。',mergePrompt);}
+  catch{merged=rawLists.join('\n');}
+  mergedRequirements = merged; // save for later use in submitInfo
+
+  // render requirement lines with have/need status
+  document.getElementById('merge-loading').style.display='none';
+  const rows = await classifyInfo(merged, activeUser);
+  const listBody = document.getElementById('req-list-body');
+  listBody.innerHTML = rows.map(r => {
+    if (r.status === 'have') {
+      const valSpan = r.value ? `<span class="req-item-value">· ${r.value}</span>` : '';
+      return `<div class="req-item have"><span class="req-item-icon">✓</span><span class="req-item-text">${r.text}${valSpan}</span></div>`;
+    } else {
+      return `<div class="req-item need"><span class="req-item-icon">·</span><span class="req-item-text">${r.text}</span></div>`;
+    }
+  }).join('');
+  listBody.style.display = 'flex';
+
+  // show supplement textarea only if there are missing items
+  const hasMissing = rows.some(r => r.status === 'need');
+
+  setTimeout(()=>{
+    if (hasMissing) {
+      document.getElementById('supplement-wrap').style.display = 'block';
+    }
+    document.getElementById('submit-info-btn').disabled=false;
+    btn.disabled=false;btn.textContent='问卦 →';
+  }, Math.min(rows.length * 200 + 400, 3000));
+}
+
+/* ══════════════════════════════
+   Phase 2 — final answers
+   ══════════════════════════════ */
+async function submitInfo(){
+  const supplement=document.getElementById('unified-ans')?.value?.trim()||'';
+  const expertList=[...selectedExperts];
+  const pre=QTYPE_CFG[qtype].pre;
+  const activeUser=activeUid?allUsers[activeUid]:null;
+
+  // build full info: profile summary + supplement
+  const profilePart = buildProfileSummary(activeUser);
+  const fullInfo = [profilePart, supplement].filter(Boolean).join('\n\n补充信息：\n') || '（用户未填写）';
+
+  // write supplement back to user profile — let AI summarize first
+  if(supplement && activeUid && allUsers[activeUid]){
+    // build context so AI can write a meaningful summary
+    const reqContext = mergedRequirements || '';
+    const summaryPrompt = `用户正在进行一次占卜问卦，问题是："${currentQuestion}"
+顾问列出了需要补充的信息：
+${reqContext}
+
+用户的回答是：
+${supplement}
+
+请将以上内容总结成简洁的第三人称描述，作为该用户档案"其他信息"字段的补充内容。
+要求：
+- 信息完整、语义明确，不能出现"三个月"这类脱离语境的描述
+- 用陈述句，不超过100字
+- 只输出总结内容本身，不加任何前缀或说明`;
+    let summarized = supplement; // fallback
+    try {
+      summarized = await callClaude('你是用户信息整理助手，只输出总结内容。', summaryPrompt);
+    } catch(e) { /* fallback to raw */ }
+
+    const prev = allUsers[activeUid].extra || '';
+    if(!prev.includes(summarized)){
+      allUsers[activeUid].extra = prev ? prev + '\n' + summarized : summarized;
+      await persistUsers();
+      const extraEl = document.getElementById('p-extra');
+      if(extraEl) extraEl.value = allUsers[activeUid].extra;
+    }
+  }
+
+  document.getElementById('submit-info-btn').disabled=true;
+  document.getElementById('submit-info-btn').textContent='推演中…';
+  document.getElementById('ask-btn').disabled=true;
+
+  const container=document.getElementById('responses-container');
+  container.innerHTML='';
+
+  expertList.forEach(id=>{
+    const e=EXPERTS[id],card=document.createElement('div');
+    card.className=`response-card ${e.cls}`;card.id=`resp-${id}`;
+    card.innerHTML=`
+      <div class="response-header">
+        <span class="response-symbol">${e.symbol}</span>
+        <span class="response-name">${e.name}</span>
+      </div>
+      <div class="loading-dots"><span></span><span></span><span></span></div>`;
+    container.appendChild(card);
+  });
+
+  const reRow=document.createElement('div');
+  reRow.style.cssText='display:flex;justify-content:center;margin-top:20px;';
+  reRow.innerHTML=`<button class="btn" onclick="clearAll()">重新提问</button>`;
+  container.appendChild(reRow);
+
+  // 预计算五行分析（只对命理先生用）
+  const baziForWx = activeUser?.date ? calcBazi(activeUser.date, activeUser.time) : null;
+  const wuxingNote = buildWuxingNote(baziForWx);
+
+  // 保存共享上下文
+  sharedContext={userInfo:fullInfo, wuxingNote, pre};
+
+  const histAnswers=[];
+  await Promise.all(expertList.map(async id=>{
+    try{
+      const msgPrefix = id==='east' && wuxingNote ? wuxingNote+'\n\n' : '';
+      const firstUserMsg=`${pre}\n用户的问题是：${currentQuestion}\n\n${msgPrefix}用户提供的信息：\n${fullInfo}`;
+      const text=await callClaude(EXPERTS[id].system_prompt, [{role:'user',content:firstUserMsg}]);
+      // 保存对话历史
+      convHistory[id]=[
+        {role:'user',content:firstUserMsg},
+        {role:'assistant',content:text}
+      ];
+      const card=document.getElementById(`resp-${id}`);
+      const body=document.createElement('div');body.className='response-body typing-cursor';
+      card.querySelector('.loading-dots').replaceWith(body);
+      typewrite(body,text,18);
+      histAnswers.push({cls:EXPERTS[id].cls,symbol:EXPERTS[id].symbol,name:EXPERTS[id].name,text});
+    }catch{
+      const card=document.getElementById(`resp-${id}`);
+      const body=document.createElement('div');body.className='response-body';
+      body.textContent='（连接失败，请稍后再试）';
+      card.querySelector('.loading-dots').replaceWith(body);
+    }
+  }));
+
+  // 所有回答完毕后，给每张卡片加追问历史区（不含输入框）
+  expertList.forEach(id=>{
+    const card=document.getElementById(`resp-${id}`);
+    if(!card)return;
+    const hist=document.createElement('div');
+    hist.className='followup-history';
+    hist.id=`followup-hist-${id}`;
+    card.appendChild(hist);
+  });
+
+  // 统一追问栏，放在所有卡片之后
+  const fuBar=document.createElement('div');
+  fuBar.id='unified-followup-bar';
+  fuBar.className='unified-followup-bar';
+  fuBar.innerHTML=`
+    <div class="unified-followup-label">〔 继续追问三位先生 〕</div>
+    <div class="unified-followup-row">
+      <textarea id="unified-followup-input" placeholder="继续追问，三位先生将同步回答…" onkeydown="fuKeydown(event)"></textarea>
+      <button class="btn followup-send-btn" id="unified-followup-btn" onclick="sendFollowup()">追问 →</button>
+    </div>`;
+  container.appendChild(fuBar);
+
+  await saveHistory({ts:Date.now(),qtype,question:currentQuestion,
+    userName:activeUser?.name||'',userInfo:fullInfo,answers:histAnswers});
+
+  phase=3;
+  const askBtn=document.getElementById('ask-btn');
+  askBtn.disabled=false;askBtn.textContent='问卦 →';askBtn.onclick=askExperts;
+}
+
+/* ══════════════════════════════
+   追问 — 所有专家同步，信息互通
+   ══════════════════════════════ */
+function fuKeydown(e){
+  if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();sendFollowup();}
+}
+
+async function sendFollowup(){
+  const input=document.getElementById('unified-followup-input');
+  const q=input?.value?.trim();
+  if(!q)return;
+  input.value='';
+
+  const expertIds=Object.keys(convHistory).filter(id=>convHistory[id]?.length);
+  if(!expertIds.length)return;
+
+  // 禁用追问按钮
+  const btn=document.getElementById('unified-followup-btn');
+  if(btn){btn.disabled=true;btn.textContent='思考中…';}
+  if(input)input.disabled=true;
+
+  // 在每个卡片的历史区插入追问 + loading 占位
+  const turnId='t'+Date.now();
+  expertIds.forEach(id=>{
+    const hist=document.getElementById(`followup-hist-${id}`);
+    if(!hist)return;
+    const turn=document.createElement('div');
+    turn.className='followup-turn'; turn.id=`${turnId}-${id}`;
+    turn.innerHTML=`<div class="followup-turn-q">${q}</div>
+      <div class="followup-turn-a loading-dots"><span></span><span></span><span></span></div>`;
+    hist.appendChild(turn);
+    turn.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+
+  // 并行追问，互通信息
+  await Promise.all(expertIds.map(async id=>{
+    try{
+      const otherSummary=expertIds
+        .filter(oid=>oid!==id&&convHistory[oid]?.length)
+        .map(oid=>{
+          const lastAns=convHistory[oid].filter(m=>m.role==='assistant').slice(-1)[0]?.content||'';
+          return `【${EXPERTS[oid].name}的最新看法】：${lastAns.slice(0,280)}${lastAns.length>280?'…':''}`;
+        }).join('\n\n');
+
+      const userMsg=otherSummary
+        ? `（其他顾问最新观点，供参考：\n${otherSummary}\n）\n\n用户追问：${q}`
+        : `用户追问：${q}`;
+
+      const messages=[...convHistory[id],{role:'user',content:userMsg}];
+      const text=await callClaude(EXPERTS[id].system_prompt,messages);
+
+      convHistory[id].push({role:'user',content:userMsg});
+      convHistory[id].push({role:'assistant',content:text});
+
+      const turn=document.getElementById(`${turnId}-${id}`);
+      if(turn){
+        const ansDiv=turn.querySelector('.followup-turn-a');
+        if(ansDiv){ansDiv.className='followup-turn-a';typewrite(ansDiv,text,16);}
+      }
+    }catch{
+      const turn=document.getElementById(`${turnId}-${id}`);
+      if(turn){const a=turn.querySelector('.followup-turn-a');if(a){a.className='followup-turn-a';a.textContent='（连接失败）';}}
+    }
+  }));
+
+  // 恢复输入
+  if(btn){btn.disabled=false;btn.textContent='追问 →';}
+  if(input)input.disabled=false;
+  input.focus();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('question').addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&e.ctrlKey&&phase===1)askExperts();
+  });
+  loadAllUsers();
+});
+</script>
+</body>
+</html>
