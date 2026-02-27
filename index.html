@@ -1605,30 +1605,30 @@ async function submitInfo(){
   if(supplement && activeUid && allUsers[activeUid]){
     // build context so AI can write a meaningful summary
     const reqContext = mergedRequirements || '';
-    const summaryPrompt = `用户正在进行一次占卜问卦，问题是："${currentQuestion}"
-顾问列出了需要补充的信息：
-${reqContext}
-
-用户的回答是：
-${supplement}
-
-请将以上内容总结成简洁的第三人称描述，作为该用户档案"其他信息"字段的补充内容。
-要求：
-- 信息完整、语义明确，不能出现"三个月"这类脱离语境的描述
-- 用陈述句，不超过100字
-- 只输出总结内容本身，不加任何前缀或说明`;
-    let summarized = supplement; // fallback
-    try {
-      summarized = await callClaude('你是用户信息整理助手，只输出总结内容。', summaryPrompt);
-    } catch(e) { /* fallback to raw */ }
-
     const prev = allUsers[activeUid].extra || '';
-    if(!prev.includes(summarized)){
-      allUsers[activeUid].extra = prev ? prev + '\n' + summarized : summarized;
-      await persistUsers();
-      const extraEl = document.getElementById('p-extra');
-      if(extraEl) extraEl.value = allUsers[activeUid].extra;
-    }
+    const mergePrompt = `你是用户档案整理助手。请将【已有信息】和【新补充信息】合并整理成精炼的用户特质条目。
+
+【已有信息】
+${prev || '（无）'}
+
+【本次问卦】问题："${currentQuestion}"
+顾问所需：${reqContext}
+用户回答：${supplement}
+
+整理要求：
+- 每条是一句独立完整的陈述，包含具体场景和内容（如"用户目前处于求职阶段，已投递数家公司等待回复"）
+- 去除重复和冗余，同类信息合并为一条
+- 不加序号、不加解释、不加前缀，每条占一行
+- 只输出条目本身`;
+    let merged = prev; // fallback
+    try {
+      merged = await callClaude('你是用户档案整理助手，只输出条目内容，每条一行。', mergePrompt);
+    } catch(e) { /* fallback to raw append */ }
+
+    allUsers[activeUid].extra = merged;
+    await persistUsers();
+    const extraEl = document.getElementById('p-extra');
+    if(extraEl) extraEl.value = merged;
   }
 
   document.getElementById('submit-info-btn').disabled=true;
