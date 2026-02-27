@@ -174,7 +174,15 @@
   .req-item.have .req-item-value { font-size:.75rem; color:rgba(120,190,120,.55); margin-left:4px; font-style:italic; }
   .req-item.need .req-item-icon { color:rgba(201,168,76,.55); }
   .req-item.need .req-item-text { color:rgba(212,180,131,.8); }
-  /* supplement input */
+  /* conflict dialog */
+  .conflict-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .conflict-box { background:#1a1207; border:1px solid rgba(201,168,76,.4); border-radius:12px; padding:28px 24px; max-width:480px; width:100%; }
+  .conflict-title { color:var(--gold); font-size:1rem; font-weight:600; margin-bottom:10px; }
+  .conflict-desc { color:rgba(245,234,216,.7); font-size:.85rem; margin-bottom:16px; }
+  .conflict-item { background:rgba(255,255,255,.04); border-radius:8px; padding:12px; margin-bottom:10px; }
+  .conflict-old { color:rgba(245,234,216,.5); font-size:.82rem; margin-bottom:4px; text-decoration:line-through; }
+  .conflict-new { color:var(--gold-light); font-size:.85rem; }
+  .conflict-btns { display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
   .supplement-wrap { padding:0 16px 16px; }
   .supplement-label { font-size:.7rem; color:rgba(212,180,131,.62); letter-spacing:.1em; margin-bottom:7px; }
   .supplement-wrap textarea { width:100%; height:130px; font-size:.88rem; resize:vertical; }
@@ -1591,6 +1599,36 @@ ${rawLists.map((r,i)=>`【${EXPERTS[expertList[i]].name}】\n${r}`).join('\n\n')
 /* ══════════════════════════════
    Phase 2 — final answers
    ══════════════════════════════ */
+// show conflict dialog, returns Promise<bool> (true = proceed with update)
+function showConflictDialog(conflicts){
+  return new Promise(resolve => {
+    // build dialog HTML
+    const items = conflicts.map(c =>
+      `<div class="conflict-item">
+        <div class="conflict-old">旧：${c.old}</div>
+        <div class="conflict-new">新：${c.new}</div>
+      </div>`
+    ).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'conflict-overlay';
+    overlay.innerHTML = `
+      <div class="conflict-box">
+        <div class="conflict-title">⚠ 检测到信息矛盾</div>
+        <div class="conflict-desc">以下信息与您之前提供的内容存在冲突，是否更新为最新版本？</div>
+        ${items}
+        <div class="conflict-btns">
+          <button class="btn" id="conflict-cancel">保留旧信息</button>
+          <button class="btn btn-primary" id="conflict-confirm">更新为新信息</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#conflict-confirm').onclick = () => { overlay.remove(); resolve(true); };
+    overlay.querySelector('#conflict-cancel').onclick  = () => { overlay.remove(); resolve(false); };
+  });
+}
+
 async function submitInfo(){
   const supplement=document.getElementById('unified-ans')?.value?.trim()||'';
   const expertList=[...selectedExperts];
@@ -1603,27 +1641,73 @@ async function submitInfo(){
 
   // write supplement back to user profile — let AI summarize first
   if(supplement && activeUid && allUsers[activeUid]){
-    // build context so AI can write a meaningful summary
     const reqContext = mergedRequirements || '';
-    const prev = allUsers[activeUid].extra || '';
-    const mergePrompt = `你是用户档案整理助手。请将【已有信息】和【新补充信息】合并整理成精炼的用户特质条目。
+    const u = allUsers[activeUid];
+    const prev = u.extra || '';
 
-【已有信息】
+    // build structured profile fields (so AI knows what's already in the form)
+    const profileFields = [
+      u.name && `姓名：${u.name}`,
+      u.gender && `性别：${u.gender}`,
+      u.date && `出生日期：${u.date}`,
+      u.time && `出生时间：${u.time}`,
+      u.birthplace && `出生地：${u.birthplace}`,
+      u.location && `现居地：${u.location}`,
+    ].filter(Boolean).join('\n') || '（无）';
+
+    // step 1: check for conflicts between new supplement and existing extra
+    if(prev){
+      const conflictPrompt = `用户档案固定字段：
+${profileFields}
+
+用户档案"其他信息"的已有条目：
+${prev}
+
+用户本次新补充的内容：
+${supplement}
+
+请检查新内容与已有条目（或固定字段）是否存在明确矛盾（同一属性前后描述不同）。
+如存在矛盾，以JSON数组格式返回：[{"old":"旧描述","new":"新描述"}]
+没有矛盾则返回：[]
+只输出JSON。`;
+
+      let conflicts = [];
+      try {
+        const raw = await callClaude('你是信息冲突检测助手，只输出JSON。', conflictPrompt);
+        const clean = raw.replace(/```json|```/g,'').trim();
+        conflicts = JSON.parse(clean);
+      } catch(e) { /* no conflict detection, proceed */ }
+
+      if(conflicts.length > 0){
+        // show conflict dialog and wait for user decision
+        const proceed = await showConflictDialog(conflicts);
+        if(!proceed) return; // user cancelled, abort
+      }
+    }
+
+    // step 2: merge old extra + new info into clean trait lines
+    const mergePrompt = `你是用户档案整理助手。用户档案包含以下所有信息：
+
+【档案固定字段】
+${profileFields}
+
+【其他信息 - 当前条目】
 ${prev || '（无）'}
 
-【本次问卦】问题："${currentQuestion}"
-顾问所需：${reqContext}
-用户回答：${supplement}
+用户本次在问卦"${currentQuestion}"时，回答了以下补充内容：
+${supplement}
 
-整理要求：
-- 每条是一句独立完整的陈述，包含具体场景和内容（如"用户目前处于求职阶段，已投递数家公司等待回复"）
-- 去除重复和冗余，同类信息合并为一条
-- 不加序号、不加解释、不加前缀，每条占一行
+请重新整理"其他信息"字段，要求：
+- 将当前条目和新补充内容合并，理解所有信息的整体含义后重新归纳
+- 与固定字段重复或可以推断的信息（如姓名、出生地等），不写入其他信息
+- 同类信息只保留最新版本，旧版本删除；有矛盾时以新信息为准
+- 每条是一句完整独立的陈述，包含具体场景和内容
+- 不加序号、不加前缀，每条占一行
 - 只输出条目本身`;
-    let merged = prev; // fallback
+    let merged = prev;
     try {
       merged = await callClaude('你是用户档案整理助手，只输出条目内容，每条一行。', mergePrompt);
-    } catch(e) { /* fallback to raw append */ }
+    } catch(e) { /* fallback */ }
 
     allUsers[activeUid].extra = merged;
     await persistUsers();
