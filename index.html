@@ -1394,10 +1394,16 @@ function getLunarDate(date){
 }
 
 async function callClaude(sys, msgOrMessages){
-  const now=new Date();
-  const dateStr=now.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
-  const timeStr=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-  const lunarStr=getLunarDate(now);
+  // use user's local timezone
+  const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long',timeZone:userTZ});
+  const timeStr = now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',timeZone:userTZ});
+  // get local date components for lunar calculation
+  const localDateStr = now.toLocaleDateString('en-CA',{timeZone:userTZ}); // YYYY-MM-DD
+  const [ly,lm,ld] = localDateStr.split('-').map(Number);
+  const localDate = new Date(ly, lm-1, ld);
+  const lunarStr=getLunarDate(localDate);
   const sysWithTime=`【当前时间】${dateStr}${lunarStr?' / '+lunarStr:''} ${timeStr}\n\n${sys}`;
   const messages=Array.isArray(msgOrMessages)?msgOrMessages:[{role:'user',content:msgOrMessages}];
   const res=await fetch('/api',{
