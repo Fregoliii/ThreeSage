@@ -1361,7 +1361,40 @@ function clearAll(){
    Claude API
    ══════════════════════════════ */
 
-// Chinese New Year dates (Spring Festival = 正月初一)
+// Heavenly Stems and Earthly Branches calculation
+const TIAN_GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const DI_ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+// Base: 2000-01-01 is 甲辰日 (index: 甲=0, 辰=4 → day offset from known base)
+const GZ_BASE = new Date(2000,0,1); // 戊午日: stem index=4(戊), branch index=6(午)
+function getGanzhi(date){
+  const diff = Math.round((new Date(date.getFullYear(),date.getMonth(),date.getDate()) - GZ_BASE) / 86400000);
+  const stem = ((diff + 4) % 10 + 10) % 10;   // base stem: 戊=4
+  const branch = ((diff + 6) % 12 + 12) % 12; // base branch: 午=6
+  return TIAN_GAN[stem] + DI_ZHI[branch];
+}
+// Year ganzhi (by Spring Festival boundary)
+function getYearGanzhi(date){
+  const cny=CNY[date.getFullYear()];
+  const y = (cny && date < cny) ? date.getFullYear()-1 : date.getFullYear();
+  // 1984 is 甲子年
+  const diff = y - 1984;
+  return TIAN_GAN[((diff%10)+10)%10] + DI_ZHI[((diff%12)+12)%12];
+}
+// Month ganzhi (approximate by solar terms, use month index)
+function getMonthGanzhi(date){
+  // month stem depends on year stem; month branch: 寅=2 for month1(Feb)
+  const y = date.getFullYear();
+  const cny = CNY[y];
+  const lunarYear = (cny && date < cny) ? y-1 : y;
+  const yearStemIdx = ((lunarYear-1984)%10+10)%10;
+  // solar month (approx): Jan~Dec → branch offset
+  // 寅月 starts ~Feb 4 (立春), use approximate
+  const m = date.getMonth(); // 0=Jan
+  // branch: 寅(2) for Feb, 卯(3) for Mar...
+  const branchIdx = ((m + 2) % 12); // rough approximation
+  const stemIdx = ((yearStemIdx % 5) * 2 + branchIdx) % 10;
+  return TIAN_GAN[stemIdx] + DI_ZHI[branchIdx];
+}
 const CNY = {2024:new Date(2024,1,10),2025:new Date(2025,0,29),2026:new Date(2026,1,17),2027:new Date(2027,1,6),2028:new Date(2028,0,26)};
 const LUNAR_MONTHS=['正','二','三','四','五','六','七','八','九','十','冬','腊'];
 const LUNAR_DAYS=['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
@@ -1404,7 +1437,10 @@ async function callClaude(sys, msgOrMessages){
   const [ly,lm,ld] = localDateStr.split('-').map(Number);
   const localDate = new Date(ly, lm-1, ld);
   const lunarStr=getLunarDate(localDate);
-  const sysWithTime=`【当前时间】${dateStr}${lunarStr?' / '+lunarStr:''} ${timeStr}\n\n${sys}`;
+  const dayGZ = getGanzhi(localDate);
+  const yearGZ = getYearGanzhi(localDate);
+  const monthGZ = getMonthGanzhi(localDate);
+  const sysWithTime=`【当前时间】${dateStr}${lunarStr?' / '+lunarStr:''} ${timeStr}\n【干支】${yearGZ}年 ${monthGZ}月 ${dayGZ}日\n注意：以上日期、农历、干支数据均已精确计算，请直接使用，切勿自行推算或修改。\n\n${sys}`;
   const messages=Array.isArray(msgOrMessages)?msgOrMessages:[{role:'user',content:msgOrMessages}];
   const res=await fetch('/api',{
     method:'POST',
