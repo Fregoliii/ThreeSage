@@ -207,6 +207,8 @@
   .synth .response-symbol { color:#d4b86a; }
   .response-name { font-size:.83rem; font-weight:700; color:var(--gold-light); letter-spacing:.1em; }
   .response-body { padding:17px 19px; color:rgba(245,234,216,.88); font-size:.9rem; line-height:1.95; }
+  .response-body.response-body-old { opacity:.5; border-left:2px solid rgba(201,168,76,.15); transition:opacity .2s; }
+  .response-body.response-body-old:hover { opacity:.85; }
   .response-body p { margin-bottom:.75em; }
   .response-body p:last-child { margin-bottom:0; }
   .response-body strong { color:var(--gold-light); font-weight:600; }
@@ -1864,7 +1866,13 @@ async function sendFollowup(){
   if(btn){btn.disabled=true;btn.textContent='思考中…';}
   if(input)input.disabled=true;
 
-  // 在每个卡片的历史区插入追问 + loading 占位
+  // dim initial response body (same style as old followup turns)
+  expertIds.forEach(id=>{
+    const body = document.querySelector(`#resp-${id} .response-body`);
+    if(body) body.classList.add('response-body-old');
+    const badge = document.getElementById(`latest-badge-${id}`);
+    if(badge) badge.remove();
+  });
   const turnId='t'+Date.now();
   expertIds.forEach(id=>{
     const hist=document.getElementById(`followup-hist-${id}`);
