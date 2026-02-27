@@ -230,6 +230,12 @@
   .followup-input-row textarea:focus { outline:none; border-color:rgba(201,168,76,.45); }
   .followup-input-row textarea::placeholder { color:rgba(212,180,131,.2); }
   .followup-send-btn { font-size:.72rem; padding:7px 12px; flex-shrink:0; }
+  /* solo followup per expert card */
+  .solo-followup-wrap { display:flex; gap:8px; padding:8px 14px 10px; border-top:1px solid rgba(201,168,76,.08); background:rgba(0,0,0,.1); align-items:flex-end; }
+  .solo-followup-wrap textarea { flex:1; height:34px; min-height:34px; font-size:.78rem; resize:none; padding:6px 10px; line-height:1.4; background:rgba(255,255,255,.03); border:1px solid rgba(201,168,76,.15); border-radius:3px; color:var(--parchment); font-family:'Noto Serif SC',serif; transition:border-color .2s; }
+  .solo-followup-wrap textarea:focus { outline:none; border-color:rgba(201,168,76,.4); }
+  .solo-followup-wrap textarea::placeholder { color:rgba(212,180,131,.18); font-size:.74rem; }
+  .solo-send-btn { font-size:.7rem; padding:5px 10px; white-space:nowrap; flex-shrink:0; }
   /* unified followup bar below all expert cards */
   .unified-followup-bar { margin-top:6px; background:rgba(12,8,4,.95); border:1px solid rgba(201,168,76,.2); border-radius:4px; overflow:hidden; }
   .unified-followup-label { font-size:.7rem; color:rgba(212,180,131,.55); letter-spacing:.14em; padding:9px 16px 0; }
@@ -1861,7 +1867,7 @@ ${u2.extra}
     }
   }));
 
-  // 所有回答完毕后，给每张卡片加追问历史区（不含输入框）
+  // 所有回答完毕后，给每张卡片加追问历史区 + 单独追问输入框
   expertList.forEach(id=>{
     const card=document.getElementById(`resp-${id}`);
     if(!card)return;
@@ -1869,6 +1875,13 @@ ${u2.extra}
     hist.className='followup-history';
     hist.id=`followup-hist-${id}`;
     card.appendChild(hist);
+    // solo followup input
+    const solo=document.createElement('div');
+    solo.className='solo-followup-wrap';
+    solo.innerHTML=`
+      <textarea id="solo-input-${id}" placeholder="单独追问${EXPERTS[id].name}…" onkeydown="soloKeydown(event,'${id}')"></textarea>
+      <button class="btn solo-send-btn" id="solo-btn-${id}" onclick="sendSoloFollowup('${id}')">追问 →</button>`;
+    card.appendChild(solo);
   });
 
   // 统一追问栏，放在所有卡片之后
@@ -1888,6 +1901,83 @@ ${u2.extra}
 
   phase=3;
   askBtn.disabled=false;askBtn.textContent='问卦 →';askBtn.onclick=askExperts;
+}
+
+function soloKeydown(e, id){
+  if(e.key==='Enter' && e.ctrlKey){ e.preventDefault(); sendSoloFollowup(id); }
+}
+
+async function sendSoloFollowup(id){
+  const input = document.getElementById(`solo-input-${id}`);
+  const btn = document.getElementById(`solo-btn-${id}`);
+  const q = input?.value?.trim();
+  if(!q || !convHistory[id]?.length) return;
+  input.value='';
+  if(btn){ btn.disabled=true; btn.textContent='思考中…'; }
+  if(input) input.disabled=true;
+
+  // dim initial body if first followup for this expert
+  const body = document.querySelector(`#resp-${id} .response-body`);
+  if(body) body.classList.add('response-body-old');
+  const badge = document.getElementById(`latest-badge-${id}`);
+  if(badge) badge.remove();
+
+  // insert turn placeholder in this expert's history
+  const turnId = 't'+Date.now();
+  const hist = document.getElementById(`followup-hist-${id}`);
+  if(hist){
+    const turn = document.createElement('div');
+    turn.className='followup-turn'; turn.id=`${turnId}-${id}`;
+    turn.innerHTML=`<div class="followup-turn-q">${q}</div>
+      <div class="followup-turn-a loading-dots"><span></span><span></span><span></span></div>`;
+    hist.appendChild(turn);
+    turn.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  try{
+    // build other experts' context as shared memory
+    const allIds = Object.keys(convHistory).filter(oid=>convHistory[oid]?.length);
+    const otherSummary = allIds
+      .filter(oid=>oid!==id)
+      .map(oid=>{
+        const lastAns=convHistory[oid].filter(m=>m.role==='assistant').slice(-1)[0]?.content||'';
+        return `【${EXPERTS[oid].name}的最新看法】：${lastAns.slice(0,280)}${lastAns.length>280?'…':''}`;
+      }).join('\n\n');
+
+    const userMsg = otherSummary
+      ? `（其他顾问最新观点，供参考：\n${otherSummary}\n）\n\n用户追问：${q}`
+      : `用户追问：${q}`;
+
+    const messages=[...convHistory[id],{role:'user',content:userMsg}];
+    const text=await callClaude(EXPERTS[id].system_prompt, messages);
+
+    // update this expert's history
+    convHistory[id].push({role:'user',content:userMsg});
+    convHistory[id].push({role:'assistant',content:text});
+
+    // also inject into other experts' memory as a silent context note
+    allIds.filter(oid=>oid!==id).forEach(oid=>{
+      convHistory[oid].push({
+        role:'user',
+        content:`（系统通知：用户刚刚单独追问了${EXPERTS[id].name}："${q}"，${EXPERTS[id].name}的回答是："${text.slice(0,400)}${text.length>400?'…':''}"，供您参考）`
+      });
+      convHistory[oid].push({role:'assistant', content:`（已记录${EXPERTS[id].name}与用户的对话）`});
+    });
+
+    const turn=document.getElementById(`${turnId}-${id}`);
+    if(turn){
+      const ansDiv=turn.querySelector('.followup-turn-a');
+      if(ansDiv){ansDiv.className='followup-turn-a'; typewrite(ansDiv,text,16);}
+      document.querySelectorAll(`#followup-hist-${id} .followup-turn`).forEach(t=>t.classList.remove('is-latest'));
+      turn.classList.add('is-latest');
+    }
+  }catch{
+    const turn=document.getElementById(`${turnId}-${id}`);
+    if(turn){const a=turn.querySelector('.followup-turn-a');if(a){a.className='followup-turn-a';a.textContent='（连接失败）';}}
+  }
+
+  if(btn){ btn.disabled=false; btn.textContent='追问 →'; }
+  if(input){ input.disabled=false; input.focus(); }
 }
 
 /* ══════════════════════════════
