@@ -1715,6 +1715,38 @@ ${supplement}
     if(extraEl) extraEl.value = merged;
   }
 
+  // silently clean extra: remove/fix anything that contradicts the fixed profile fields
+  if(activeUid && allUsers[activeUid] && allUsers[activeUid].extra){
+    const u2 = allUsers[activeUid];
+    const pf = [
+      u2.name && `姓名：${u2.name}`,
+      u2.gender && `性别：${u2.gender}`,
+      u2.date && `出生日期：${u2.date}`,
+      u2.time && `出生时间：${u2.time}`,
+      u2.birthplace && `出生地：${u2.birthplace}`,
+      u2.location && `现居地：${u2.location}`,
+    ].filter(Boolean).join('\n');
+    if(pf){
+      const cleanPrompt = `用户档案固定字段（权威事实）：
+${pf}
+
+"其他信息"当前内容：
+${u2.extra}
+
+请重新整理"其他信息"，删除与固定字段重复或矛盾的内容，以固定字段为准。
+不改变其他条目，每条占一行，只输出整理后的条目。`;
+      try {
+        const cleaned = await callClaude('你是用户档案整理助手，只输出条目内容，每条一行。', cleanPrompt);
+        if(cleaned && cleaned !== u2.extra){
+          allUsers[activeUid].extra = cleaned;
+          await persistUsers();
+          const el = document.getElementById('p-extra');
+          if(el) el.value = cleaned;
+        }
+      } catch(e) { /* silent fail */ }
+    }
+  }
+
   document.getElementById('submit-info-btn').disabled=true;
   document.getElementById('submit-info-btn').textContent='推演中…';
   document.getElementById('ask-btn').disabled=true;
