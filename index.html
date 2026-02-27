@@ -1659,6 +1659,7 @@ async function submitInfo(){
     const reqContext = mergedRequirements || '';
     const u = allUsers[activeUid];
     const prev = u.extra || '';
+    let skipSave = false;
 
     // build structured profile fields (so AI knows what's already in the form)
     const profileFields = [
@@ -1694,14 +1695,18 @@ ${supplement}
       } catch(e) { /* no conflict detection, proceed */ }
 
       if(conflicts.length > 0){
-        // show conflict dialog and wait for user decision
         const proceed = await showConflictDialog(conflicts);
-        if(!proceed) return; // user cancelled, abort
+        if(!proceed){
+          // keep old profile, but still ask experts using the new supplement this session
+          // just skip the merge/save step below by jumping out of the if(supplement) block
+          skipSave = true;
+        }
       }
     }
 
-    // step 2: merge old extra + new info into clean trait lines
-    const mergePrompt = `你是用户档案整理助手。用户档案包含以下所有信息：
+    // step 2: merge old extra + new info into clean trait lines (skip if user chose to keep old profile)
+    if(!skipSave){
+      const mergePrompt = `你是用户档案整理助手。用户档案包含以下所有信息：
 
 【档案固定字段】
 ${profileFields}
@@ -1720,15 +1725,16 @@ ${supplement}
 - 每条是一句完整独立的陈述，包含具体场景和内容
 - 不加序号、不加前缀，每条占一行
 - 只输出条目本身`;
-    let merged = prev;
-    try {
-      merged = await callClaude('你是用户档案整理助手，只输出条目内容，每条一行。', mergePrompt);
-    } catch(e) { /* fallback */ }
+      let merged = prev;
+      try {
+        merged = await callClaude('你是用户档案整理助手，只输出条目内容，每条一行。', mergePrompt);
+      } catch(e) { /* fallback */ }
 
-    allUsers[activeUid].extra = merged;
-    await persistUsers();
-    const extraEl = document.getElementById('p-extra');
-    if(extraEl) extraEl.value = merged;
+      allUsers[activeUid].extra = merged;
+      await persistUsers();
+      const extraEl = document.getElementById('p-extra');
+      if(extraEl) extraEl.value = merged;
+    }
   }
 
   // silently clean extra: remove/fix anything that contradicts the fixed profile fields
