@@ -1360,11 +1360,45 @@ function clearAll(){
 /* ══════════════════════════════
    Claude API
    ══════════════════════════════ */
+
+// Chinese New Year dates (Spring Festival = 正月初一)
+const CNY = {2024:new Date(2024,1,10),2025:new Date(2025,0,29),2026:new Date(2026,1,17),2027:new Date(2027,1,6),2028:new Date(2028,0,26)};
+const LUNAR_MONTHS=['正','二','三','四','五','六','七','八','九','十','冬','腊'];
+const LUNAR_DAYS=['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
+  '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
+  '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+// Month lengths for each lunar year (approximate, enough for prompt context)
+const LUNAR_MONTHS_LEN = {
+  2024:[30,29,30,29,30,29,30,29,30,30,29,30,29], // 2024 has leap Feb
+  2025:[30,29,30,29,30,29,30,29,30,29,30,30,29],
+  2026:[29,30,29,30,29,30,29,30,29,30,29,30],
+  2027:[30,29,30,29,30,29,30,30,29,30,29,30],
+};
+
+function getLunarDate(date){
+  try{
+    const year=date.getFullYear();
+    // find which lunar year we're in
+    let lunarYear=year;
+    if(CNY[year] && date < CNY[year]) lunarYear=year-1;
+    const cny=CNY[lunarYear]||CNY[year];
+    if(!cny) return null;
+    let diff=Math.round((date-cny)/86400000);
+    if(diff<0||diff>385) return null;
+    const lens=LUNAR_MONTHS_LEN[lunarYear];
+    if(!lens) return null;
+    let m=0;
+    while(m<lens.length && diff>=lens[m]){ diff-=lens[m]; m++; }
+    return `农历${lunarYear}年${LUNAR_MONTHS[m]}月${LUNAR_DAYS[diff]}`;
+  }catch(e){ return null; }
+}
+
 async function callClaude(sys, msgOrMessages){
   const now=new Date();
   const dateStr=now.toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
   const timeStr=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-  const sysWithTime=`【当前时间】${dateStr} ${timeStr}\n\n${sys}`;
+  const lunarStr=getLunarDate(now);
+  const sysWithTime=`【当前时间】${dateStr}${lunarStr?' / '+lunarStr:''} ${timeStr}\n\n${sys}`;
   const messages=Array.isArray(msgOrMessages)?msgOrMessages:[{role:'user',content:msgOrMessages}];
   const res=await fetch('/api',{
     method:'POST',
