@@ -1305,17 +1305,20 @@ const EXPERTS={
 1. 用户信息中包含"系统五行分析"模块，其中的日主强弱、喜用神、忌神均由系统精确计算，你必须完全采纳，不得推翻、质疑或自行重新推算。
 2. 分析时，凡提到有利方向必须与喜用神一致，凡提到不利因素必须与忌神一致。
 3. 绝对禁止得出与系统结论相反的用神判断。
+4. 所有八字、干支、星盘数据必须使用系统提供的计算结果。若对话中出现任何人的生辰信息，其对应的八字/干支/星盘已由系统在用户信息末尾注明，直接使用，严禁自行推算。
 【格式要求】：使用 Markdown 输出，用 **加粗** 强调关键词，用 ## 标注段落小标题，段落之间空一行。不要用"---"分隔符。回答200-350字，始终用中文。`,
     info_prompt:`你是中国命理学大师。用户将提问，请列出还需要的补充信息（最多3条，"·"开头，简短）。
 注意：系统已自动推算好八字，如用户已提供生辰则不必再问出生时间。只列最关键的，不作解答。`},
   west:{name:'星象大师',symbol:'✦',cls:'west',
     system_prompt:`你是精通西方占星学的星象大师，精通本命盘、过境、推运、星座、宫位、行星、相位。
-言语理性与神秘并存，引用行星能量、原型心理学。回答200-350字，有真实见解，始终用中文。`,
+言语理性与神秘并存，引用行星能量、原型心理学。回答200-350字，有真实见解，始终用中文。
+【铁律】：所有星盘、星座数据必须使用系统提供的计算结果。若对话中出现任何人的生辰信息，其星盘已由系统在用户信息末尾注明，直接使用，严禁自行推算。`,
     info_prompt:`你是西方占星学大师。用户将提问，请列出需要的信息（最多3条，"·"开头，简短）。只列最关键的，不作解答。`},
   synth:{name:'融合智者',symbol:'⚖',cls:'synth',
     system_prompt:`你是融合东西方玄学与现代科学、逻辑学的综合学者。
 客观评价命理占星的文化价值与局限，用荣格原型、认知偏见等现代视角解析。语言理性不冰冷。
-回答200-350字，有真实见解，始终用中文。`,
+回答200-350字，有真实见解，始终用中文。
+【铁律】：所有八字、干支、星盘数据必须使用系统提供的计算结果。若对话中出现任何人的生辰信息，其对应数据已由系统在用户信息末尾注明，直接使用，严禁自行推算。`,
     info_prompt:`你是融合东西方玄学与现代科学的学者。用户将提问，请列出需要的信息（最多3条，"·"开头，简短）。只列最关键的，不作解答。`}
 };
 
@@ -1652,7 +1655,31 @@ async function submitInfo(){
 
   // build full info: profile summary + supplement
   const profilePart = buildProfileSummary(activeUser);
-  const fullInfo = [profilePart, supplement].filter(Boolean).join('\n\n补充信息：\n') || '（用户未填写）';
+
+  // extract any dates mentioned in question or supplement, calculate bazi/astro for them
+  const allText = currentQuestion + ' ' + supplement;
+  const dateMatches = [...allText.matchAll(/(\d{4})[年\-\/](\d{1,2})[月\-\/](\d{1,2})[日号]?(?:[^\d]|$)/g)];
+  const extraCalc = [];
+  const seen = new Set();
+  dateMatches.forEach(m => {
+    const y=m[1], mo=String(m[2]).padStart(2,'0'), d=String(m[3]).padStart(2,'0');
+    const dateStr=`${y}-${mo}-${d}`;
+    // skip user's own birthdate to avoid duplication
+    if(activeUser?.date === dateStr) return;
+    if(seen.has(dateStr)) return;
+    seen.add(dateStr);
+    const b = calcBazi(dateStr, '');
+    const a = calcAstro(dateStr, '');
+    if(b || a){
+      const parts = [`【系统推算：${dateStr}】`];
+      if(b) parts.push(`八字：${baziToString(b)}`);
+      if(a) parts.push(`星盘：${astroToString(a)}`);
+      extraCalc.push(parts.join(' '));
+    }
+  });
+
+  const fullInfo = [profilePart, supplement, extraCalc.length ? '【对话中涉及的其他生辰推算】\n'+extraCalc.join('\n') : '']
+    .filter(Boolean).join('\n\n') || '（用户未填写）';
 
   // write supplement back to user profile — let AI summarize first
   if(supplement && activeUid && allUsers[activeUid]){
