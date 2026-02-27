@@ -1642,6 +1642,12 @@ async function submitInfo(){
   const pre=QTYPE_CFG[qtype].pre;
   const activeUser=activeUid?allUsers[activeUid]:null;
 
+  // give immediate feedback so user knows something is happening
+  const submitBtn = document.getElementById('submit-info-btn');
+  const askBtn = document.getElementById('ask-btn');
+  if(submitBtn){ submitBtn.disabled=true; submitBtn.textContent='整理信息中…'; }
+  if(askBtn) askBtn.disabled=true;
+
   // build full info: profile summary + supplement
   const profilePart = buildProfileSummary(activeUser);
   const fullInfo = [profilePart, supplement].filter(Boolean).join('\n\n补充信息：\n') || '（用户未填写）';
@@ -1754,9 +1760,7 @@ ${u2.extra}
     }
   }
 
-  document.getElementById('submit-info-btn').disabled=true;
-  document.getElementById('submit-info-btn').textContent='推演中…';
-  document.getElementById('ask-btn').disabled=true;
+  if(submitBtn) submitBtn.textContent='推演中…';
 
   const container=document.getElementById('responses-container');
   container.innerHTML='';
@@ -1836,7 +1840,6 @@ ${u2.extra}
     userName:activeUser?.name||'',userInfo:fullInfo,answers:histAnswers});
 
   phase=3;
-  const askBtn=document.getElementById('ask-btn');
   askBtn.disabled=false;askBtn.textContent='问卦 →';askBtn.onclick=askExperts;
 }
 
